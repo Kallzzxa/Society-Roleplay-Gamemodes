@@ -47,11 +47,18 @@ Bahasa Indonesia, compile 0 error, commit+push tiap item.
       Label 3D: nomor rumah + harga + status (Dijual/Pemilik) +
       [Terkunci]/[Terbuka]. Jumlah rumah tampil di /stats > Aset.
       Modul: `Server_Libraries/House/House_System.pwn`.
-- [ ] **Private Vehicle**: tabel `player_vehicles` (id, char_id, model,
-      pos_x/y/z, angle, color1, color2, plate, locked, fuel). Maks 2 per
-      karakter. `/buyvehicle` (daftar model + harga, spawn di dekat pemain),
-      `/vpark` (simpan posisi), `/vlock`, spawn otomatis saat karakter load,
-      despawn saat disconnect. Textdraw kecil info kendaraan saat mengemudi.
+- [x] **Private Vehicle** (selesai 2026-10-14): tabel `player_vehicles`
+      (id, char_id, model, pos_x/y/z, angle, color1, color2, plate, locked,
+      fuel). Maks 2 per karakter, 16 model di katalog (Sanchez Rp45jt s/d
+      Infernus Rp450jt). `/buyvehicle` (dialog daftar + konfirmasi, spawn di
+      depan pemain + plat "SRP XXXX" + langsung dimasukkan ke kursi sopir),
+      `/vpark` (simpan posisi/arah/bensin), `/vlock` (kendaraan yang
+      dikemudikan/terdekat; terkunci tidak bisa dimasuki orang lain),
+      `/vlist` (dialog kelola: info, kunci/buka, lacak via checkpoint),
+      spawn otomatis saat karakter load, despawn saat disconnect (posisi
+      disimpan dulu). PlayerTextDraw info kecil (plat, model, status kunci,
+      bensin) tampil saat mengemudi. Jumlah kendaraan tampil di /stats >
+      Aset. Modul: `Server_Libraries/Vehicle/Vehicle_System.pwn`.
 - [ ] **Admin DB**: level admin SUDAH tersimpan di `accounts.admin`
       (via /setadmin). Tambahan: `/adminduty` (tandai on-duty, nama berwarna),
       `/admins` (daftar admin online + level), nama tiap level

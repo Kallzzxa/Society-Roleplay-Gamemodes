@@ -219,6 +219,9 @@ stock ResetPlayerVars(playerid)
 // Modul rumah dinamis (pola sama seperti modul bisnis).
 #include "Server_Libraries/House/House_System.pwn"
 
+// Modul kendaraan pribadi dinamis (pola sama seperti modul rumah).
+#include "Server_Libraries/Vehicle/Vehicle_System.pwn"
+
 // SaveCharacter: menyimpan data karakter pemain ke database.
 stock SaveCharacter(playerid)
 {
@@ -297,6 +300,7 @@ public OnGameModeInit()
     SetTimer("BusinessPayday", 3600000, true); // profit bisnis tiap 1 jam
     Business_LoadAll(); // muat bisnis dinamis dari database
     House_LoadAll();    // muat rumah dinamis dari database
+    Vehicle_LoadAll();  // muat kendaraan pribadi dari database
     print("[SocietyRP] Gamemode dimuat: Society RP v1.0");
     return 1;
 }
@@ -350,6 +354,7 @@ public OnPlayerDisconnect(playerid, reason)
     Needs_Hide(playerid);
     Needs_DestroyTextDraws(playerid);
     House_OnDisconnect(playerid); // batalkan pembuatan rumah yang belum selesai
+    Vehicle_OnDisconnect(playerid); // simpan & despawn kendaraan milik pemain
     ResetPlayerVars(playerid);
     return 1;
 }
@@ -371,6 +376,20 @@ public OnPlayerSpawn(playerid)
         SendClientMessage(playerid, COLOR_GREY, "Ketik /help untuk melihat daftar perintah.");
         Needs_Show(playerid); // tampilkan textdraw makan/minum/stress
     }
+    return 1;
+}
+
+// OnPlayerStateChange: info textdraw kendaraan saat pemain mengemudi.
+public OnPlayerStateChange(playerid, newstate, oldstate)
+{
+    Vehicle_OnStateChange(playerid, newstate, oldstate);
+    return 1;
+}
+
+// OnPlayerEnterVehicle: cegah masuk ke kendaraan pribadi yang terkunci.
+public OnPlayerEnterVehicle(playerid, vehicleid, ispassenger)
+{
+    Vehicle_OnEnterVehicle(playerid, vehicleid, ispassenger);
     return 1;
 }
 
@@ -661,9 +680,10 @@ Dialog:StatsMenu(playerid, response, listitem, inputtext[])
         {
             new biz = Business_CountOwned(Society_PlayerData[playerid][sPCharID]);
             new rumah = House_CountOwned(Society_PlayerData[playerid][sPCharID]);
+            new kendaraan = Vehicle_CountOwned(Society_PlayerData[playerid][sPCharID]);
             format(info, sizeof(info),
-                "Bisnis: %d\nRumah: %d\nKendaraan: -\n\n(Kendaraan segera hadir)",
-                biz, rumah);
+                "Bisnis: %d\nRumah: %d\nKendaraan: %d (maks 2)",
+                biz, rumah, kendaraan);
             Dialog_Show(playerid, StatsSub, DIALOG_STYLE_MSGBOX, "Aset", info, "Kembali", "");
         }
     }
@@ -761,7 +781,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (strcmp(cmd, "/help", true) == 0)
     {
         Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan",
-            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu\n/enterhouse - Masuk ke rumah\n/exithouse - Keluar dari dalam rumah\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] - (Admin 3+) Buat rumah dinamis (2 langkah)\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
+            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu\n/enterhouse - Masuk ke rumah\n/exithouse - Keluar dari dalam rumah\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] - (Admin 3+) Buat rumah dinamis (2 langkah)\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
             "Tutup", "");
         return 1;
     }
@@ -1164,6 +1184,72 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
+    // /buyvehicle - membuka katalog & membeli kendaraan pribadi (maks 2 per karakter)
+    if (strcmp(cmd, "/buyvehicle", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        if (Vehicle_CountOwned(Society_PlayerData[playerid][sPCharID]) >= MAX_VEH_PER_CHAR)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Kamu sudah punya 2 kendaraan (maksimal).");
+            return 1;
+        }
+        new list[1024];
+        Vehicle_BuildBuyList(list, sizeof(list));
+        Dialog_Show(playerid, VehBuy, DIALOG_STYLE_LIST, "Beli Kendaraan", list, "Pilih", "Tutup");
+        return 1;
+    }
+
+    // /vpark - menyimpan posisi parkir kendaraan yang sedang dikemudikan
+    if (strcmp(cmd, "/vpark", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        Vehicle_Park(playerid);
+        return 1;
+    }
+
+    // /vlock - mengunci/membuka kendaraanmu (yang dikemudikan atau terdekat)
+    if (strcmp(cmd, "/vlock", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new slot = -1;
+        if (IsPlayerInAnyVehicle(playerid))
+        {
+            slot = Vehicle_SlotFromVehID(GetPlayerVehicleID(playerid));
+        }
+        if (slot == -1) slot = Vehicle_OwnedNear(playerid);
+        if (slot == -1 || vOwnerCharID[slot] != Society_PlayerData[playerid][sPCharID])
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tidak ada kendaraanmu di dekat sini.");
+            return 1;
+        }
+        Vehicle_ToggleLock(playerid, slot);
+        return 1;
+    }
+
+    // /vlist - daftar & kelola kendaraan pribadimu (info, kunci/buka, lacak)
+    if (strcmp(cmd, "/vlist", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        Vehicle_ShowList(playerid);
+        return 1;
+    }
+
     SendClientMessage(playerid, COLOR_GREY, "Perintah tidak dikenal. Ketik /help.");
     return 1;
 }
@@ -1333,6 +1419,7 @@ public OnCharLoaded(playerid)
     cache_get_value_name_float(0, "hunger", ftmp); Society_PlayerData[playerid][sPHunger] = ftmp;
     cache_get_value_name_float(0, "thirst", ftmp); Society_PlayerData[playerid][sPThirst] = ftmp;
     cache_get_value_name_float(0, "stress", ftmp); Society_PlayerData[playerid][sPStress] = ftmp;
+    Vehicle_OnCharLoad(playerid); // spawn ulang kendaraan milik karakter
     SpawnCharacter(playerid);
     return 1;
 }

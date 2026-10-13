@@ -86,3 +86,22 @@ CREATE TABLE IF NOT EXISTS `houses` (
 
 -- Untuk database yang sudah ada (dibuat sebelum update rumah dinamis), jalankan:
 -- (cukup import ulang blok CREATE TABLE `houses` di atas)
+
+CREATE TABLE IF NOT EXISTS `player_vehicles` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `char_id` INT NOT NULL,
+    `model` INT NOT NULL,
+    `pos_x` FLOAT NOT NULL,
+    `pos_y` FLOAT NOT NULL,
+    `pos_z` FLOAT NOT NULL,
+    `angle` FLOAT DEFAULT 0.0,
+    `color1` INT DEFAULT 0,
+    `color2` INT DEFAULT 0,
+    `plate` VARCHAR(16) NOT NULL,
+    `locked` TINYINT DEFAULT 0,
+    `fuel` FLOAT DEFAULT 100.0,
+    INDEX `idx_vehicle_char` (`char_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update kendaraan pribadi), jalankan:
+-- (cukup import ulang blok CREATE TABLE `player_vehicles` di atas)
