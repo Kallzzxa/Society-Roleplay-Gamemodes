@@ -42,6 +42,48 @@ Bahasa Indonesia, compile 0 error, commit+push tiap item.
       `/admins` (daftar admin online + level), nama tiap level
       (1=Junior, 2=Senior, 3=Head, 4=Manager, 5=Owner).
 
+## Berikutnya — BATCH BARU (permintaan user 2026-10-13)
+
+Dikerjakan SETELAH 4 item prioritas, SEBELUM batch fitur review server.
+Gaya tetap: oldschool-modern, textdraw, Bahasa Indonesia, easydialog,
+compile 0 error, commit+push per item.
+
+- [ ] **Dynamic Faction**: tabel `factions` (id, name, type
+      [polisi/EMS/pemerintah/montir/news], color, spawn pos, leader_char_id,
+      kas). Admin `/buatfaction` → 3D label markas. `/finvite`, `/fkick`,
+      rank, `/f` chat fraksi, `/duty` ambil seragam & senjata dinas.
+- [ ] **Dynamic Workshop**: tabel `workshops` (id, owner_char_id, name,
+      pos, price, profit). Bengkel milik pemain: `/belibengkel`,
+      pelanggan `/modif` (warna, komponen, neon) & `/repair`, pemilik
+      ambil profit `/wambil`. Label 3D nama bengkel.
+- [ ] **Dynamic Garage Kota**: tabel `garages` (id, name, pos, fee).
+      Garasi umum: `/garasi` simpan kendaraan pribadi (despawn + tercatat),
+      dialog ambil kembali. Solusi parkir saat slot jalanan penuh.
+- [ ] **Dynamic Family/Gangster**: tabel `families` (id, name, color,
+      leader_char_id, kas). `/buatfamily [nama]` (bayar), `/faminvite`,
+      `/famkick`, rank, `/fam` chat, warna nama & kendaraan keluarga.
+      Basis badside untuk turf/gang war nanti.
+- [ ] **Dynamic Zone (Greenzone)**: tabel `zones` (id, name, min_x/min_y/
+      max_x/max_y, type). Admin `/buatzone [nama] [tipe]` → area persegi.
+      Greenzone: damage & tembak dinonaktifkan di dalam area (cek
+      OnPlayerTakeDamage/OnPlayerWeaponShot). Textdraw "GREEMZONE" saat
+      masuk area.
+- [ ] **Dynamic Dealer**: tabel `dealers` (id, name, pos, type
+      [kendaraan]). Showroom: `/dealer` → dialog daftar kendaraan + harga,
+      test drive (spawn sementara), beli langsung jadi private vehicle.
+- [ ] **Dynamic Pom**: tabel `gasstations` (id, owner_char_id, name, pos,
+      price_per_liter, stock). `/belipom`, pemilik set harga `/sethargabbm`,
+      pemain `/isibensin` di pompa (butuh sistem bensin). Label 3D nama +
+      harga.
+- [ ] **Dynamic Door**: tabel `doors` (id, owner_type [house/business/
+      faction], owner_id, name, ext pos, int pos+interior, locked).
+      Admin/pemilik `/buatdoor` → pintu masuk/keluar interior apa pun
+      (rumah, bisnis, markas). `/kuncipintu`, pickup + label 3D.
+- [ ] **Inventory System (textdraw)**: tabel `inventory`
+      (char_id, item, amount). `/inv` → UI PlayerTextDraw grid slot
+      klik (pakai SelectTextDraw): pakai/drop/beri item (makanan, minuman,
+      obat, senjata, narkoba, ikan, ore). Kapasitas terbatas per slot.
+
 ## Berikutnya — FITUR SERU DARI REVIEW SERVER (permintaan user 2026-10-13)
 
 Dikerjakan SETELAH 4 item prioritas di atas. Referensi: fitur-fitur yang
