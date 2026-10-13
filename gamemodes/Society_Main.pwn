@@ -8,6 +8,7 @@
 //   gamemodes/Server_Libraries/Utils/Utils_Enum.pwn   <- enum Society_Player
 //   gamemodes/Server_Libraries/Mysql/Mysql_Connect.inc<- koneksi database
 //   gamemodes/Server_Libraries/Business/Business_System.pwn <- bisnis dinamis
+//   gamemodes/Server_Libraries/House/House_System.pwn     <- rumah dinamis
 //   society.sql                                       <- skema database MySQL
 //
 // Fitur:
@@ -18,6 +19,7 @@
 //  - Autosave tiap 10 menit + perintah /save
 //  - Mata uang Rupiah dengan format Rp1.500.000
 //  - Bisnis dinamis: /createbisnis (admin), /buybusiness, /bizinfo, /bizwithdraw, /sellbusiness
+//  - Rumah dinamis: /createhouse (admin), /buyhouse, /enterhouse, /exithouse, /lockhouse, /sellhouse, /houseinfo
 //  - Perintah pemain: /stats, /money, /save, /help
 //  - Perintah admin: /setadmin (RCON), /kick, /ban
 //
@@ -214,6 +216,9 @@ stock ResetPlayerVars(playerid)
 // dan stock util di atas).
 #include "Server_Libraries/Business/Business_System.pwn"
 
+// Modul rumah dinamis (pola sama seperti modul bisnis).
+#include "Server_Libraries/House/House_System.pwn"
+
 // SaveCharacter: menyimpan data karakter pemain ke database.
 stock SaveCharacter(playerid)
 {
@@ -291,6 +296,7 @@ public OnGameModeInit()
     SetTimer("NeedsTick", 60000, true); // kebutuhan (makan/minum/stress) tiap 1 menit
     SetTimer("BusinessPayday", 3600000, true); // profit bisnis tiap 1 jam
     Business_LoadAll(); // muat bisnis dinamis dari database
+    House_LoadAll();    // muat rumah dinamis dari database
     print("[SocietyRP] Gamemode dimuat: Society RP v1.0");
     return 1;
 }
@@ -343,6 +349,7 @@ public OnPlayerDisconnect(playerid, reason)
     }
     Needs_Hide(playerid);
     Needs_DestroyTextDraws(playerid);
+    House_OnDisconnect(playerid); // batalkan pembuatan rumah yang belum selesai
     ResetPlayerVars(playerid);
     return 1;
 }
@@ -653,9 +660,10 @@ Dialog:StatsMenu(playerid, response, listitem, inputtext[])
         case 3: // Aset
         {
             new biz = Business_CountOwned(Society_PlayerData[playerid][sPCharID]);
+            new rumah = House_CountOwned(Society_PlayerData[playerid][sPCharID]);
             format(info, sizeof(info),
-                "Bisnis: %d\nRumah: -\nKendaraan: -\n\n(Rumah & kendaraan segera hadir)",
-                biz);
+                "Bisnis: %d\nRumah: %d\nKendaraan: -\n\n(Kendaraan segera hadir)",
+                biz, rumah);
             Dialog_Show(playerid, StatsSub, DIALOG_STYLE_MSGBOX, "Aset", info, "Kembali", "");
         }
     }
@@ -753,7 +761,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (strcmp(cmd, "/help", true) == 0)
     {
         Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan",
-            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
+            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu\n/enterhouse - Masuk ke rumah\n/exithouse - Keluar dari dalam rumah\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] - (Admin 3+) Buat rumah dinamis (2 langkah)\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
             "Tutup", "");
         return 1;
     }
@@ -996,6 +1004,163 @@ public OnPlayerCommandText(playerid, cmdtext[])
             "Yakin ingin menjual bisnis \"%s\"?\n\nKamu akan menerima %s (%d%% dari harga beli).",
             bName[slot], harga, BUSINESS_SELL_RATE);
         Dialog_Show(playerid, BizSellConfirm, DIALOG_STYLE_MSGBOX, "Jual Bisnis", msg, "Jual", "Batal");
+        return 1;
+    }
+
+    // /createhouse [harga] - admin level 3+: membuat rumah dinamis (2 langkah)
+    // Langkah 1: berdiri di posisi PINTU MASUK -> /createhouse [harga]
+    // Langkah 2: pergi ke titik PINTU KELUAR di dalam interior -> /createhouse
+    if (strcmp(cmd, "/createhouse", true) == 0)
+    {
+        if (!IsAdmin(playerid, 3))
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda tidak memiliki akses ke perintah ini.");
+            return 1;
+        }
+        if (g_SQL == MYSQL_INVALID_HANDLE)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Database sedang offline.");
+            return 1;
+        }
+        new sharga[32];
+        sharga = strtok(cmdtext, idx);
+        if (strlen(sharga))
+        {
+            // Langkah 1: catat pintu masuk.
+            if (!IsNumeric(sharga))
+            {
+                SendClientMessage(playerid, COLOR_RED, "Harga harus berupa angka.");
+                return 1;
+            }
+            new price = strval(sharga);
+            if (price < 1000000 || price > 100000000)
+            {
+                SendClientMessage(playerid, COLOR_RED, "Harga rumah harus Rp1.000.000 - Rp100.000.000.");
+                return 1;
+            }
+            House_CreateStep1(playerid, price);
+        }
+        else
+        {
+            // Langkah 2: catat pintu keluar & simpan.
+            if (pHouseStep[playerid] != 1)
+            {
+                SendClientMessage(playerid, COLOR_GREY, "Gunakan: /createhouse [harga]");
+                SendClientMessage(playerid, COLOR_GREY, "Berdiri di posisi pintu MASUK, ketik /createhouse [harga],");
+                SendClientMessage(playerid, COLOR_GREY, "lalu pergi ke titik pintu KELUAR di interior dan ketik /createhouse.");
+                return 1;
+            }
+            House_CreateStep2(playerid);
+        }
+        return 1;
+    }
+
+    // /buyhouse - membeli rumah yang belum ada pemiliknya (di dekat pintu masuk)
+    if (strcmp(cmd, "/buyhouse", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new slot = House_NearestEntrance(playerid);
+        if (slot == -1)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tidak ada rumah di dekatmu.");
+            return 1;
+        }
+        House_Buy(playerid, slot);
+        return 1;
+    }
+
+    // /enterhouse - masuk ke rumah lewat pintu masuk
+    if (strcmp(cmd, "/enterhouse", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new slot = House_NearestEntrance(playerid);
+        if (slot == -1)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tidak ada pintu rumah di dekatmu.");
+            return 1;
+        }
+        House_Enter(playerid, slot);
+        return 1;
+    }
+
+    // /exithouse - keluar dari dalam rumah
+    if (strcmp(cmd, "/exithouse", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new slot = House_InsideHouse(playerid);
+        if (slot == -1)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Kamu tidak sedang berada di dalam rumah.");
+            return 1;
+        }
+        House_Exit(playerid, slot);
+        return 1;
+    }
+
+    // /houseinfo - dialog kelola rumah milik sendiri
+    if (strcmp(cmd, "/houseinfo", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        House_ShowInfo(playerid);
+        return 1;
+    }
+
+    // /lockhouse - mengunci/membuka rumah milik sendiri
+    if (strcmp(cmd, "/lockhouse", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new slot = House_OwnedNear(playerid);
+        if (slot == -1) slot = House_InsideHouse(playerid);
+        if (slot == -1 || hOwnerCharID[slot] != Society_PlayerData[playerid][sPCharID])
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tidak ada rumahmu di dekat sini.");
+            return 1;
+        }
+        House_ToggleLock(playerid, slot);
+        return 1;
+    }
+
+    // /sellhouse - menjual kembali rumahmu (70% dari harga beli)
+    if (strcmp(cmd, "/sellhouse", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new slot = House_OwnedNear(playerid);
+        if (slot == -1 || hOwnerCharID[slot] != Society_PlayerData[playerid][sPCharID])
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tidak ada rumahmu di dekat sini.");
+            return 1;
+        }
+        pHouseMenuSlot[playerid] = slot;
+        new harga[32], msg[256];
+        FormatRupiah((hPrice[slot] * HOUSE_SELL_RATE) / 100, harga, sizeof(harga));
+        format(msg, sizeof(msg),
+            "Yakin ingin menjual rumah #%d?\n\nKamu akan menerima %s (%d%% dari harga beli).",
+            hDBID[slot], harga, HOUSE_SELL_RATE);
+        Dialog_Show(playerid, HouseSellConfirm, DIALOG_STYLE_MSGBOX, "Jual Rumah", msg, "Jual", "Batal");
         return 1;
     }
 

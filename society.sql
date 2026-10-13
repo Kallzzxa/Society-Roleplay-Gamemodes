@@ -66,3 +66,23 @@ CREATE TABLE IF NOT EXISTS `businesses` (
 
 -- Untuk database yang sudah ada (dibuat sebelum update bisnis dinamis), jalankan:
 -- (cukup import ulang blok CREATE TABLE `businesses` di atas)
+
+CREATE TABLE IF NOT EXISTS `houses` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `owner_char_id` INT DEFAULT 0,
+    `price` INT DEFAULT 0,
+    `ent_x` FLOAT NOT NULL,
+    `ent_y` FLOAT NOT NULL,
+    `ent_z` FLOAT NOT NULL,
+    `ent_int` INT DEFAULT 0,
+    `ent_vw` INT DEFAULT 0,
+    `exit_x` FLOAT NOT NULL,
+    `exit_y` FLOAT NOT NULL,
+    `exit_z` FLOAT NOT NULL,
+    `exit_int` INT DEFAULT 0,
+    `locked` TINYINT DEFAULT 0,
+    INDEX `idx_house_owner` (`owner_char_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update rumah dinamis), jalankan:
+-- (cukup import ulang blok CREATE TABLE `houses` di atas)

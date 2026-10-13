@@ -11,7 +11,7 @@ commit + push, lalu tandai selesai di file ini.
       `/stats` sudah dirombak 2026-10-13 menjadi menu dialog bertingkat:
       Informasi Umum, Keuangan (tunai + bank + total kekayaan),
       Kebutuhan (label Kenyang/Lapar, Segar/Haus, Santai/Stres Berat),
-      Aset (jumlah bisnis milik pemain; rumah & kendaraan menyusul).
+      Aset (jumlah bisnis & rumah milik pemain; kendaraan menyusul).
 - [x] v2.0 — Refactor modular: `Society_Main.pwn` + `Server_Libraries/`
       (Mysql/Mysql_Connect.inc, Utils/Utils_Color.pwn, Utils/Utils_Enum.pwn),
       dialog pakai easydialog, skema DB via `society.sql` (tanpa auto-create),
@@ -35,10 +35,18 @@ Bahasa Indonesia, compile 0 error, commit+push tiap item.
       (kembali 70%). Profit bertambah tiap payday (1 jam) bila ada
       pemilik, pemilik online diberi tahu. Modul:
       `Server_Libraries/Business/Business_System.pwn`.
-- [ ] **Dynamic House**: tabel `houses` (id, owner_char_id, price, entrance
-      pos, exit pos+interior, locked). Admin: `/createhouse [harga] [interior]`.
-      Pemain: `/buyhouse`, `/enterhouse` & `/exithouse` (via pickup),
-      `/lockhouse`. Label 3D: nama jalan + status (Dijual/Pemilik).
+- [x] **Dynamic House** (selesai 2026-10-14): tabel `houses`
+      (id, owner_char_id, price, ent_x/y/z, ent_int, ent_vw,
+      exit_x/y/z, exit_int, locked). Admin: `/createhouse [harga]`
+      2 langkah — berdiri di pintu MASUK ketik perintah, lalu pergi ke
+      titik pintu KELUAR di dalam interior dan ketik `/createhouse` lagi.
+      Pemain: `/buyhouse`, `/enterhouse` & `/exithouse`,
+      `/lockhouse`, `/sellhouse` (kembali 70%), `/houseinfo` (dialog
+      kelola: kunci/buka, jual). Virtual world unik per rumah
+      (= id DB) supaya penghuni rumah berbeda tidak saling melihat.
+      Label 3D: nomor rumah + harga + status (Dijual/Pemilik) +
+      [Terkunci]/[Terbuka]. Jumlah rumah tampil di /stats > Aset.
+      Modul: `Server_Libraries/House/House_System.pwn`.
 - [ ] **Private Vehicle**: tabel `player_vehicles` (id, char_id, model,
       pos_x/y/z, angle, color1, color2, plate, locked, fuel). Maks 2 per
       karakter. `/buyvehicle` (daftar model + harga, spawn di dekat pemain),
@@ -160,7 +168,7 @@ Bahasa Indonesia, easydialog, compile 0 error, commit+push per item.
 - [ ] Pekerjaan 1: supir bus (checkpoint + gaji per checkpoint)
 - [ ] Pekerjaan 2: kurir paket (ambil & antar paket)
 - [ ] Pekerjaan 3: penambang / pemancing (pilih salah satu, sistem sederhana)
-- [ ] Sistem rumah: beli rumah, kunci/pintu, interior, simpan di DB
+- [x] Sistem rumah: beli rumah, kunci/pintu, interior, simpan di DB (selesai 2026-10-14 via Dynamic House)
 - [ ] Sistem kendaraan pribadi: beli, kunci, simpan posisi & modif di DB
 - [ ] Sistem bank/ATM: setor, tarik, transfer antar karakter
 - [ ] Sistem HP: SMS antar pemain, kontak sederhana
