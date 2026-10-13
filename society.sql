@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS `characters` (
     `hunger` FLOAT DEFAULT 100.0,
     `thirst` FLOAT DEFAULT 100.0,
     `stress` FLOAT DEFAULT 0.0,
+    `faction_id` INT DEFAULT 0,
+    `faction_rank` TINYINT DEFAULT 0,
     `created` DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_account_id` (`account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -49,6 +51,8 @@ CREATE TABLE IF NOT EXISTS `characters` (
 -- ALTER TABLE `characters` ADD COLUMN `hunger` FLOAT DEFAULT 100.0;
 -- ALTER TABLE `characters` ADD COLUMN `thirst` FLOAT DEFAULT 100.0;
 -- ALTER TABLE `characters` ADD COLUMN `stress` FLOAT DEFAULT 0.0;
+-- ALTER TABLE `characters` ADD COLUMN `faction_id` INT DEFAULT 0;
+-- ALTER TABLE `characters` ADD COLUMN `faction_rank` TINYINT DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS `businesses` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -105,3 +109,24 @@ CREATE TABLE IF NOT EXISTS `player_vehicles` (
 
 -- Untuk database yang sudah ada (dibuat sebelum update kendaraan pribadi), jalankan:
 -- (cukup import ulang blok CREATE TABLE `player_vehicles` di atas)
+
+-- Skema fraksi dinamis (update 2026-10-14).
+-- type: 0=LSPD, 1=EMS, 2=Pemerintah, 3=Montir, 4=News.
+-- leader_char_id: id karakter ketua (0 = belum ada ketua).
+-- cash: kas fraksi (disetor via /fdeposit, diambil ketua via /fwithdraw).
+CREATE TABLE IF NOT EXISTS `factions` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(32) NOT NULL,
+    `type` TINYINT DEFAULT 0,
+    `color` INT DEFAULT 0,
+    `spawn_x` FLOAT NOT NULL,
+    `spawn_y` FLOAT NOT NULL,
+    `spawn_z` FLOAT NOT NULL,
+    `spawn_angle` FLOAT DEFAULT 0.0,
+    `leader_char_id` INT DEFAULT 0,
+    `cash` INT DEFAULT 0,
+    INDEX `idx_faction_leader` (`leader_char_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update fraksi dinamis), jalankan:
+-- (cukup import ulang blok CREATE TABLE `factions` di atas)

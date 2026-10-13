@@ -22,6 +22,7 @@
 //  - Mata uang Rupiah dengan format Rp1.500.000
 //  - Bisnis dinamis: /createbisnis (admin), /buybusiness, /bizinfo, /bizwithdraw, /sellbusiness
 //  - Rumah dinamis: /createhouse (admin), /buyhouse, /enterhouse, /exithouse, /lockhouse, /sellhouse, /houseinfo
+//  - Fraksi dinamis: /createfaction (admin), /finvite, /fkick, /setrank, /f, /duty (seragam+senjata dinas), /finfo, /factions, /fdeposit, /fwithdraw, /fsetleader (admin), /fquit
 //  - Perintah pemain: /stats, /money, /save, /help
 //  - Perintah admin: /setadmin (RCON), /adminduty, /admins, /kick, /ban
 //
@@ -180,6 +181,8 @@ stock ResetPlayerVars(playerid)
     Society_PlayerData[playerid][sPThirst] = 100.0;
     Society_PlayerData[playerid][sPStress] = 0.0;
     Society_PlayerData[playerid][sPNeedsCD] = 0;
+    Society_PlayerData[playerid][sPFactionID] = 0;
+    Society_PlayerData[playerid][sPFactionRank] = 0;
     for (new i = 0; i < 3; i++)
     {
         sPCharList[playerid][i][0] = EOS;
@@ -227,6 +230,9 @@ stock ResetPlayerVars(playerid)
 // Modul admin DB: nama jabatan level, mode duty, daftar admin online.
 #include "Server_Libraries/Admin/Admin_System.pwn"
 
+// Modul fraksi dinamis (pola sama seperti modul bisnis).
+#include "Server_Libraries/Faction/Faction_System.pwn"
+
 // SaveCharacter: menyimpan data karakter pemain ke database.
 stock SaveCharacter(playerid)
 {
@@ -239,11 +245,12 @@ stock SaveCharacter(playerid)
     pMoney[playerid] = GetPlayerMoney(playerid);
     new query[512];
     mysql_format(g_SQL, query, sizeof(query),
-        "UPDATE characters SET money = %d, bank = %d, level = %d, exp = %d, pos_x = %f, pos_y = %f, pos_z = %f, interior = %d, vw = %d, health = %f, armour = %f, hunger = %f, thirst = %f, stress = %f WHERE id = %d",
+        "UPDATE characters SET money = %d, bank = %d, level = %d, exp = %d, pos_x = %f, pos_y = %f, pos_z = %f, interior = %d, vw = %d, health = %f, armour = %f, hunger = %f, thirst = %f, stress = %f, faction_id = %d, faction_rank = %d WHERE id = %d",
         pMoney[playerid], pBank[playerid], pLevel[playerid], pExp[playerid],
         x, y, z, GetPlayerInterior(playerid), GetPlayerVirtualWorld(playerid),
         hp, ap,
         Society_PlayerData[playerid][sPHunger], Society_PlayerData[playerid][sPThirst], Society_PlayerData[playerid][sPStress],
+        Society_PlayerData[playerid][sPFactionID], Society_PlayerData[playerid][sPFactionRank],
         Society_PlayerData[playerid][sPCharID]);
     mysql_tquery(g_SQL, query);
     return 1;
@@ -306,6 +313,7 @@ public OnGameModeInit()
     Business_LoadAll(); // muat bisnis dinamis dari database
     House_LoadAll();    // muat rumah dinamis dari database
     Vehicle_LoadAll();  // muat kendaraan pribadi dari database
+    Faction_LoadAll();  // muat fraksi dinamis dari database
     print("[SocietyRP] Gamemode dimuat: Society RP v1.0");
     return 1;
 }
@@ -328,6 +336,7 @@ public OnGameModeExit()
 public OnPlayerConnect(playerid)
 {
     ResetPlayerVars(playerid);
+    Faction_OnConnect(playerid); // reset data sementara fraksi
     if (g_SQL == MYSQL_INVALID_HANDLE)
     {
         SendClientMessage(playerid, COLOR_RED, "Database sedang offline. Silakan coba lagi nanti.");
@@ -361,6 +370,7 @@ public OnPlayerDisconnect(playerid, reason)
     House_OnDisconnect(playerid); // batalkan pembuatan rumah yang belum selesai
     Vehicle_OnDisconnect(playerid); // simpan & despawn kendaraan milik pemain
     Admin_OnDisconnect(playerid); // reset status duty admin
+    Faction_OnDisconnect(playerid); // reset status duty fraksi & undangan
     ResetPlayerVars(playerid);
     return 1;
 }
@@ -788,7 +798,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (strcmp(cmd, "/help", true) == 0)
     {
         Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan",
-            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu\n/enterhouse - Masuk ke rumah\n/exithouse - Keluar dari dalam rumah\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/adminduty - Nyalakan/matikan mode duty (nama berwarna oranye)\n/admins - Melihat daftar admin online\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] - (Admin 3+) Buat rumah dinamis (2 langkah)\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
+            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu\n/enterhouse - Masuk ke rumah\n/exithouse - Keluar dari dalam rumah\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nFraksi:\n/finfo - Info fraksimu & daftar anggota\n/factions - Daftar semua fraksi di server\n/f [pesan] - Chat khusus anggota fraksi\n/duty - Mulai/selesai duty (seragam & senjata dinas, di markas)\n/finvite [id] - Undang pemain (Wakil Ketua+)\n/fkick [id] - Keluarkan anggota (Wakil Ketua+)\n/fquit - Keluar dari fraksi\n/setrank [id] [rank] - Atur rank anggota (Ketua)\n/fdeposit [jumlah] - Setor ke kas fraksi\n/fwithdraw [jumlah] - Ambil kas fraksi (Ketua)\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/adminduty - Nyalakan/matikan mode duty (nama berwarna oranye)\n/admins - Melihat daftar admin online\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] - (Admin 3+) Buat rumah dinamis (2 langkah)\n/createfaction [tipe] [nama] - (Admin 3+) Buat fraksi dinamis di posisimu\n/fsetleader [id] - (Admin 4+) Tunjuk ketua fraksi\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
             "Tutup", "");
         return 1;
     }
@@ -1281,6 +1291,230 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
+    // /createfaction [tipe] [nama] - admin level 3+: membuat fraksi dinamis di posisi admin
+    if (strcmp(cmd, "/createfaction", true) == 0)
+    {
+        if (!IsAdmin(playerid, 3))
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda tidak memiliki akses ke perintah ini.");
+            return 1;
+        }
+        if (g_SQL == MYSQL_INVALID_HANDLE)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Database sedang offline.");
+            return 1;
+        }
+        new stipe[32], snama[32];
+        stipe = strtok(cmdtext, idx);
+        snama = strtok(cmdtext, idx);
+        if (!strlen(stipe) || !strlen(snama))
+        {
+            SendClientMessage(playerid, COLOR_GREY, "Gunakan: /createfaction [tipe] [nama]");
+            SendClientMessage(playerid, COLOR_GREY, "Tipe: 0=LSPD (Polisi), 1=EMS (Medis), 2=Pemerintah, 3=Montir, 4=News");
+            SendClientMessage(playerid, COLOR_GREY, "Contoh: /createfaction 0 LSPD_Los_Santos (spasi diganti _)");
+            return 1;
+        }
+        if (strlen(snama) < 3)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Nama fraksi minimal 3 karakter.");
+            return 1;
+        }
+        if (!IsNumeric(stipe))
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tipe fraksi harus berupa angka.");
+            return 1;
+        }
+        new type = strval(stipe);
+        if (type < 0 || type >= FACTION_TYPES)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tipe fraksi harus 0-4.");
+            return 1;
+        }
+        for (new i = 0; snama[i] != EOS; i++)
+        {
+            if (snama[i] == '_') snama[i] = ' ';
+        }
+        Faction_Create(playerid, type, snama);
+        return 1;
+    }
+
+    // /fsetleader [id] - admin level 4+: menunjuk ketua fraksi baru (harus sudah anggota)
+    if (strcmp(cmd, "/fsetleader", true) == 0)
+    {
+        if (!IsAdmin(playerid, 4))
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda tidak memiliki akses ke perintah ini.");
+            return 1;
+        }
+        new sid[32];
+        sid = strtok(cmdtext, idx);
+        if (!strlen(sid))
+        {
+            SendClientMessage(playerid, COLOR_GREY, "Gunakan: /fsetleader [id]");
+            return 1;
+        }
+        Faction_SetLeader(playerid, strval(sid));
+        return 1;
+    }
+
+    // /finvite [id] - pimpinan (Wakil Ketua+) mengundang pemain ke fraksi
+    if (strcmp(cmd, "/finvite", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new sid[32];
+        sid = strtok(cmdtext, idx);
+        if (!strlen(sid))
+        {
+            SendClientMessage(playerid, COLOR_GREY, "Gunakan: /finvite [id]");
+            return 1;
+        }
+        Faction_Invite(playerid, strval(sid));
+        return 1;
+    }
+
+    // /fkick [id] - pimpinan (Wakil Ketua+) mengeluarkan anggota fraksi
+    if (strcmp(cmd, "/fkick", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new sid[32];
+        sid = strtok(cmdtext, idx);
+        if (!strlen(sid))
+        {
+            SendClientMessage(playerid, COLOR_GREY, "Gunakan: /fkick [id]");
+            return 1;
+        }
+        Faction_Kick(playerid, strval(sid));
+        return 1;
+    }
+
+    // /fquit - keluar dari fraksi sendiri
+    if (strcmp(cmd, "/fquit", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        Faction_Quit(playerid);
+        return 1;
+    }
+
+    // /setrank [id] [rank] - ketua mengatur rank anggota (1-5)
+    if (strcmp(cmd, "/setrank", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new sid[32], srank[32];
+        sid = strtok(cmdtext, idx);
+        srank = strtok(cmdtext, idx);
+        if (!strlen(sid) || !strlen(srank))
+        {
+            SendClientMessage(playerid, COLOR_GREY, "Gunakan: /setrank [id] [rank]");
+            SendClientMessage(playerid, COLOR_GREY, "Rank: 1=Rekrut, 2=Anggota, 3=Senior, 4=Perwira, 5=Wakil Ketua");
+            return 1;
+        }
+        Faction_SetRank(playerid, strval(sid), strval(srank));
+        return 1;
+    }
+
+    // /f [pesan] - chat khusus anggota fraksi
+    if (strcmp(cmd, "/f", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new text[128];
+        if (!GetCmdRest(cmdtext, idx, text, sizeof(text)))
+        {
+            SendClientMessage(playerid, COLOR_GREY, "Gunakan: /f [pesan]");
+            return 1;
+        }
+        Faction_Chat(playerid, text);
+        return 1;
+    }
+
+    // /duty - mulai/selesai duty fraksi (harus di markas): seragam + senjata dinas
+    if (strcmp(cmd, "/duty", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        Faction_ToggleDuty(playerid);
+        return 1;
+    }
+
+    // /finfo - info fraksi sendiri + daftar anggota
+    if (strcmp(cmd, "/finfo", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        Faction_ShowInfo(playerid);
+        return 1;
+    }
+
+    // /factions - daftar semua fraksi di server
+    if (strcmp(cmd, "/factions", true) == 0)
+    {
+        Faction_ShowList(playerid);
+        return 1;
+    }
+
+    // /fdeposit [jumlah] - setor uang tunai ke kas fraksi
+    if (strcmp(cmd, "/fdeposit", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new sjumlah[32];
+        sjumlah = strtok(cmdtext, idx);
+        if (!strlen(sjumlah) || !IsNumeric(sjumlah))
+        {
+            SendClientMessage(playerid, COLOR_GREY, "Gunakan: /fdeposit [jumlah]");
+            return 1;
+        }
+        Faction_Deposit(playerid, strval(sjumlah));
+        return 1;
+    }
+
+    // /fwithdraw [jumlah] - ketua mengambil uang dari kas fraksi
+    if (strcmp(cmd, "/fwithdraw", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new sjumlah[32];
+        sjumlah = strtok(cmdtext, idx);
+        if (!strlen(sjumlah) || !IsNumeric(sjumlah))
+        {
+            SendClientMessage(playerid, COLOR_GREY, "Gunakan: /fwithdraw [jumlah]");
+            return 1;
+        }
+        Faction_Withdraw(playerid, strval(sjumlah));
+        return 1;
+    }
+
     SendClientMessage(playerid, COLOR_GREY, "Perintah tidak dikenal. Ketik /help.");
     return 1;
 }
@@ -1450,6 +1684,8 @@ public OnCharLoaded(playerid)
     cache_get_value_name_float(0, "hunger", ftmp); Society_PlayerData[playerid][sPHunger] = ftmp;
     cache_get_value_name_float(0, "thirst", ftmp); Society_PlayerData[playerid][sPThirst] = ftmp;
     cache_get_value_name_float(0, "stress", ftmp); Society_PlayerData[playerid][sPStress] = ftmp;
+    cache_get_value_name_int(0, "faction_id", tmp); Society_PlayerData[playerid][sPFactionID] = tmp;
+    cache_get_value_name_int(0, "faction_rank", tmp); Society_PlayerData[playerid][sPFactionRank] = tmp;
     Vehicle_OnCharLoad(playerid); // spawn ulang kendaraan milik karakter
     SpawnCharacter(playerid);
     return 1;

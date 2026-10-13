@@ -75,10 +75,20 @@ Dikerjakan SETELAH 4 item prioritas, SEBELUM batch fitur review server.
 Gaya tetap: oldschool-modern, textdraw, Bahasa Indonesia, easydialog,
 compile 0 error, commit+push per item.
 
-- [ ] **Dynamic Faction**: tabel `factions` (id, name, type
-      [polisi/EMS/pemerintah/montir/news], color, spawn pos, leader_char_id,
-      kas). Admin `/createfaction` → 3D label markas. `/finvite`, `/fkick`,
-      rank, `/f` chat fraksi, `/duty` ambil seragam & senjata dinas.
+- [x] **Dynamic Faction** (selesai 2026-10-14): tabel `factions`
+      (id, name, type [0=LSPD/1=EMS/2=Pemerintah/3=Montir/4=News], color,
+      spawn_x/y/z, spawn_angle, leader_char_id, cash) + kolom baru
+      `characters.faction_id` & `faction_rank`. Admin: `/createfaction [tipe] [nama]`
+      → markas pickup bintang + label 3D berwarna (pembuat otomatis jadi Ketua);
+      `/fsetleader [id]` (admin 4+) tunjuk ketua baru. Pimpinan: `/finvite [id]`
+      (dialog terima/tolak ke target), `/fkick [id]`, `/setrank [id] [rank]`
+      (ketua, rank 1-5: Rekrut s/d Wakil Ketua, 6=Ketua). Anggota: `/f [pesan]`
+      chat fraksi (warna fraksi), `/duty` di markas (seragam + senjata dinas
+      per tipe: LSPD pistol/shotgun/MP5, EMS pemadam, News kamera; skin lama
+      dikembalikan saat off duty), `/finfo` (info + daftar anggota), `/factions`
+      (daftar semua fraksi), `/fquit`, kas fraksi `/fdeposit` & `/fwithdraw`
+      (ketua saja). Duty otomatis reset saat disconnect. Modul:
+      `Server_Libraries/Faction/Faction_System.pwn`.
 - [ ] **Dynamic Workshop**: tabel `workshops` (id, owner_char_id, name,
       pos, price, profit). Bengkel milik pemain: `/buyworkshop`,
       pelanggan `/mod` (warna, komponen, neon) & `/repair`, pemilik
