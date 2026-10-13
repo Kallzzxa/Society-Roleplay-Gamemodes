@@ -7,6 +7,7 @@
 //   gamemodes/Server_Libraries/Utils/Utils_Color.pwn  <- definisi warna
 //   gamemodes/Server_Libraries/Utils/Utils_Enum.pwn   <- enum Society_Player
 //   gamemodes/Server_Libraries/Mysql/Mysql_Connect.inc<- koneksi database
+//   gamemodes/Server_Libraries/Business/Business_System.pwn <- bisnis dinamis
 //   society.sql                                       <- skema database MySQL
 //
 // Fitur:
@@ -16,6 +17,7 @@
 //  - Dialog memakai easyDialog (tanpa ID dialog manual)
 //  - Autosave tiap 10 menit + perintah /save
 //  - Mata uang Rupiah dengan format Rp1.500.000
+//  - Bisnis dinamis: /buatbisnis (admin), /belibisnis, /binfo, /bambil, /jualbisnis
 //  - Perintah pemain: /stats, /uang, /save, /bantuan
 //  - Perintah admin: /setadmin (RCON), /kick, /ban
 //
@@ -208,6 +210,10 @@ stock ResetPlayerVars(playerid)
 // DATABASE
 //================================================================
 
+// Modul bisnis dinamis (di-include di sini karena memakai pCharName
+// dan stock util di atas).
+#include "Server_Libraries/Business/Business_System.pwn"
+
 // SaveCharacter: menyimpan data karakter pemain ke database.
 stock SaveCharacter(playerid)
 {
@@ -283,6 +289,8 @@ public OnGameModeInit()
     }
     SetTimer("AutoSave", 600000, true); // autosave tiap 10 menit
     SetTimer("NeedsTick", 60000, true); // kebutuhan (makan/minum/stress) tiap 1 menit
+    SetTimer("BusinessPayday", 3600000, true); // profit bisnis tiap 1 jam
+    Business_LoadAll(); // muat bisnis dinamis dari database
     print("[SocietyRP] Gamemode dimuat: Society RP v1.0");
     return 1;
 }
@@ -678,7 +686,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (strcmp(cmd, "/bantuan", true) == 0)
     {
         Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan",
-            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/uang - Melihat jumlah uang\n/makan - Makan untuk mengisi kebutuhan makan\n/minum - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/bantuan - Membuka menu ini\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
+            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/uang - Melihat jumlah uang\n/makan - Makan untuk mengisi kebutuhan makan\n/minum - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/bantuan - Membuka menu ini\n\nBisnis:\n/belibisnis - Membeli bisnis di dekatmu\n/binfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bambil - Mengambil keuntungan bisnis\n/jualbisnis - Menjual kembali bisnismu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/buatbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
             "Tutup", "");
         return 1;
     }
@@ -796,6 +804,131 @@ public OnPlayerCommandText(playerid, cmdtext[])
         format(msg, sizeof(msg), "[ADMIN] %s memblokir %s. Alasan: %s", aname, tname, reason);
         SendClientMessageToAll(COLOR_RED, msg);
         BanEx(target, reason);
+        return 1;
+    }
+
+    // /buatbisnis [nama] [tipe] [harga] - admin level 3+: membuat bisnis dinamis
+    if (strcmp(cmd, "/buatbisnis", true) == 0)
+    {
+        if (!IsAdmin(playerid, 3))
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda tidak memiliki akses ke perintah ini.");
+            return 1;
+        }
+        if (g_SQL == MYSQL_INVALID_HANDLE)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Database sedang offline.");
+            return 1;
+        }
+        new snama[32], stipe[32], sharga[32];
+        snama = strtok(cmdtext, idx);
+        stipe = strtok(cmdtext, idx);
+        sharga = strtok(cmdtext, idx);
+        if (!strlen(snama) || !strlen(stipe) || !strlen(sharga))
+        {
+            SendClientMessage(playerid, COLOR_GREY, "Gunakan: /buatbisnis [nama] [tipe] [harga]");
+            SendClientMessage(playerid, COLOR_GREY, "Tipe: 0=Warung Makan, 1=Toko Kelontong, 2=Restoran, 3=Bar, 4=Toko Pakaian, 5=Hotel");
+            SendClientMessage(playerid, COLOR_GREY, "Contoh: /buatbisnis Warung_Barokah 0 5000000 (spasi diganti _)");
+            return 1;
+        }
+        if (strlen(snama) < 3)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Nama bisnis minimal 3 karakter.");
+            return 1;
+        }
+        if (!IsNumeric(stipe) || !IsNumeric(sharga))
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tipe dan harga harus berupa angka.");
+            return 1;
+        }
+        new type = strval(stipe), price = strval(sharga);
+        if (type < 0 || type >= BUSINESS_TYPES)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tipe bisnis harus 0-5.");
+            return 1;
+        }
+        if (price < 100000 || price > 100000000)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Harga bisnis harus Rp100.000 - Rp100.000.000.");
+            return 1;
+        }
+        for (new i = 0; snama[i] != EOS; i++)
+        {
+            if (snama[i] == '_') snama[i] = ' ';
+        }
+        Business_Create(playerid, snama, type, price);
+        return 1;
+    }
+
+    // /belibisnis - membeli bisnis yang belum ada pemiliknya (di dekat pickup)
+    if (strcmp(cmd, "/belibisnis", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new slot = Business_Nearest(playerid);
+        if (slot == -1)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tidak ada bisnis di dekatmu.");
+            return 1;
+        }
+        Business_Buy(playerid, slot);
+        return 1;
+    }
+
+    // /binfo - dialog kelola bisnis milik sendiri (di dekat bisnis)
+    if (strcmp(cmd, "/binfo", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        Business_ShowInfo(playerid);
+        return 1;
+    }
+
+    // /bambil - mengambil keuntungan bisnis milik sendiri
+    if (strcmp(cmd, "/bambil", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new slot = Business_OwnedNear(playerid);
+        if (slot == -1)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tidak ada bisnismu di dekat sini.");
+            return 1;
+        }
+        Business_Collect(playerid, slot);
+        return 1;
+    }
+
+    // /jualbisnis - menjual kembali bisnismu (70% dari harga beli)
+    if (strcmp(cmd, "/jualbisnis", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new slot = Business_OwnedNear(playerid);
+        if (slot == -1)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tidak ada bisnismu di dekat sini.");
+            return 1;
+        }
+        pBizMenuSlot[playerid] = slot;
+        new harga[32], msg[256];
+        FormatRupiah((bPrice[slot] * BUSINESS_SELL_RATE) / 100, harga, sizeof(harga));
+        format(msg, sizeof(msg),
+            "Yakin ingin menjual bisnis \"%s\"?\n\nKamu akan menerima %s (%d%% dari harga beli).",
+            bName[slot], harga, BUSINESS_SELL_RATE);
+        Dialog_Show(playerid, BizSellConfirm, DIALOG_STYLE_MSGBOX, "Jual Bisnis", msg, "Jual", "Batal");
         return 1;
     }
 

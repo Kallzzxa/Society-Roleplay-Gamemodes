@@ -23,11 +23,14 @@ DB + pickup/label 3D + dialog easydialog + textdraw oldschool-modern).
 Struktur: modul baru di `Server_Libraries/<Nama>/`, skema di `society.sql`,
 Bahasa Indonesia, compile 0 error, commit+push tiap item.
 
-- [ ] **Dynamic Business**: tabel `businesses` (id, name, owner_char_id, type,
-      price, profit, pos_x/y/z, locked). Admin: `/buatbisnis [nama] [tipe] [harga]`
-      → pickup + label 3D. Pemain: `/belibisnis` (dekat pickup), `/binfo`
-      (dialog: ambil keuntungan `/bambil`, kunci), `/jualbisnis`. Profit
-      bertambah tiap payday bila ada pemilik.
+- [x] **Dynamic Business** (selesai 2026-10-13): tabel `businesses`
+      (id, name, owner_char_id, type, price, profit, pos_x/y/z, locked).
+      Admin: `/buatbisnis [nama] [tipe] [harga]` → pickup + label 3D.
+      Pemain: `/belibisnis` (dekat pickup), `/binfo`
+      (dialog: ambil keuntungan `/bambil`, kunci), `/jualbisnis`
+      (kembali 70%). Profit bertambah tiap payday (1 jam) bila ada
+      pemilik, pemilik online diberi tahu. Modul:
+      `Server_Libraries/Business/Business_System.pwn`.
 - [ ] **Dynamic House**: tabel `houses` (id, owner_char_id, price, entrance
       pos, exit pos+interior, locked). Admin: `/buathouse [harga] [interior]`.
       Pemain: `/belirumah`, `/masukrumah` & `/keluarrumah` (via pickup),

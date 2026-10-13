@@ -49,3 +49,20 @@ CREATE TABLE IF NOT EXISTS `characters` (
 -- ALTER TABLE `characters` ADD COLUMN `hunger` FLOAT DEFAULT 100.0;
 -- ALTER TABLE `characters` ADD COLUMN `thirst` FLOAT DEFAULT 100.0;
 -- ALTER TABLE `characters` ADD COLUMN `stress` FLOAT DEFAULT 0.0;
+
+CREATE TABLE IF NOT EXISTS `businesses` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(32) NOT NULL,
+    `owner_char_id` INT DEFAULT 0,
+    `type` TINYINT DEFAULT 0,
+    `price` INT DEFAULT 0,
+    `profit` INT DEFAULT 0,
+    `pos_x` FLOAT NOT NULL,
+    `pos_y` FLOAT NOT NULL,
+    `pos_z` FLOAT NOT NULL,
+    `locked` TINYINT DEFAULT 0,
+    INDEX `idx_owner_char_id` (`owner_char_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update bisnis dinamis), jalankan:
+-- (cukup import ulang blok CREATE TABLE `businesses` di atas)
