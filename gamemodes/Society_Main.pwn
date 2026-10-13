@@ -9,6 +9,8 @@
 //   gamemodes/Server_Libraries/Mysql/Mysql_Connect.inc<- koneksi database
 //   gamemodes/Server_Libraries/Business/Business_System.pwn <- bisnis dinamis
 //   gamemodes/Server_Libraries/House/House_System.pwn     <- rumah dinamis
+//   gamemodes/Server_Libraries/Vehicle/Vehicle_System.pwn <- kendaraan pribadi
+//   gamemodes/Server_Libraries/Admin/Admin_System.pwn    <- admin DB: nama level, duty, daftar admin
 //   society.sql                                       <- skema database MySQL
 //
 // Fitur:
@@ -21,7 +23,7 @@
 //  - Bisnis dinamis: /createbisnis (admin), /buybusiness, /bizinfo, /bizwithdraw, /sellbusiness
 //  - Rumah dinamis: /createhouse (admin), /buyhouse, /enterhouse, /exithouse, /lockhouse, /sellhouse, /houseinfo
 //  - Perintah pemain: /stats, /money, /save, /help
-//  - Perintah admin: /setadmin (RCON), /kick, /ban
+//  - Perintah admin: /setadmin (RCON), /adminduty, /admins, /kick, /ban
 //
 // Dikembangkan dengan Hermes Agent.
 //================================================================
@@ -222,6 +224,9 @@ stock ResetPlayerVars(playerid)
 // Modul kendaraan pribadi dinamis (pola sama seperti modul rumah).
 #include "Server_Libraries/Vehicle/Vehicle_System.pwn"
 
+// Modul admin DB: nama jabatan level, mode duty, daftar admin online.
+#include "Server_Libraries/Admin/Admin_System.pwn"
+
 // SaveCharacter: menyimpan data karakter pemain ke database.
 stock SaveCharacter(playerid)
 {
@@ -355,6 +360,7 @@ public OnPlayerDisconnect(playerid, reason)
     Needs_DestroyTextDraws(playerid);
     House_OnDisconnect(playerid); // batalkan pembuatan rumah yang belum selesai
     Vehicle_OnDisconnect(playerid); // simpan & despawn kendaraan milik pemain
+    Admin_OnDisconnect(playerid); // reset status duty admin
     ResetPlayerVars(playerid);
     return 1;
 }
@@ -640,10 +646,11 @@ Dialog:StatsMenu(playerid, response, listitem, inputtext[])
     {
         case 0: // Informasi Umum
         {
-            new gender[12], admin[24];
+            new gender[12], admin[32], title[16];
             if (pGender[playerid] == 1) format(gender, sizeof(gender), "Perempuan");
             else format(gender, sizeof(gender), "Laki-laki");
-            if (Society_PlayerData[playerid][sPAdmin] > 0) format(admin, sizeof(admin), "Ya (Level %d)", Society_PlayerData[playerid][sPAdmin]);
+            Admin_Name(Society_PlayerData[playerid][sPAdmin], title, sizeof(title));
+            if (Society_PlayerData[playerid][sPAdmin] > 0) format(admin, sizeof(admin), "Ya (Level %d - %s)", Society_PlayerData[playerid][sPAdmin], title);
             else format(admin, sizeof(admin), "Tidak");
             format(info, sizeof(info),
                 "Nama: %s\nUmur: %d tahun\nJenis Kelamin: %s\nLevel: %d\nEXP: %d\nAdmin: %s",
@@ -781,7 +788,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (strcmp(cmd, "/help", true) == 0)
     {
         Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan",
-            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu\n/enterhouse - Masuk ke rumah\n/exithouse - Keluar dari dalam rumah\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] - (Admin 3+) Buat rumah dinamis (2 langkah)\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
+            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu\n/enterhouse - Masuk ke rumah\n/exithouse - Keluar dari dalam rumah\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/adminduty - Nyalakan/matikan mode duty (nama berwarna oranye)\n/admins - Melihat daftar admin online\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] - (Admin 3+) Buat rumah dinamis (2 langkah)\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
             "Tutup", "");
         return 1;
     }
@@ -899,6 +906,30 @@ public OnPlayerCommandText(playerid, cmdtext[])
         format(msg, sizeof(msg), "[ADMIN] %s memblokir %s. Alasan: %s", aname, tname, reason);
         SendClientMessageToAll(COLOR_RED, msg);
         BanEx(target, reason);
+        return 1;
+    }
+
+    // /adminduty - admin level 1+: nyalakan/matikan mode duty (nama berwarna)
+    if (strcmp(cmd, "/adminduty", true) == 0)
+    {
+        if (!IsAdmin(playerid, 1))
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda tidak memiliki akses ke perintah ini.");
+            return 1;
+        }
+        Admin_ToggleDuty(playerid);
+        return 1;
+    }
+
+    // /admins - daftar admin yang sedang online (semua pemain)
+    if (strcmp(cmd, "/admins", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged])
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda harus login terlebih dahulu.");
+            return 1;
+        }
+        Admin_ShowList(playerid);
         return 1;
     }
 

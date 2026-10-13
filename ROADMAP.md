@@ -59,10 +59,15 @@ Bahasa Indonesia, compile 0 error, commit+push tiap item.
       disimpan dulu). PlayerTextDraw info kecil (plat, model, status kunci,
       bensin) tampil saat mengemudi. Jumlah kendaraan tampil di /stats >
       Aset. Modul: `Server_Libraries/Vehicle/Vehicle_System.pwn`.
-- [ ] **Admin DB**: level admin SUDAH tersimpan di `accounts.admin`
-      (via /setadmin). Tambahan: `/adminduty` (tandai on-duty, nama berwarna),
-      `/admins` (daftar admin online + level), nama tiap level
-      (1=Junior, 2=Senior, 3=Head, 4=Manager, 5=Owner).
+- [x] **Admin DB** (selesai 2026-10-14): level admin SUDAH tersimpan di
+      `accounts.admin` (via /setadmin). `/adminduty` (admin 1+: nyala/matikan
+      on-duty — nama jadi oranye + pengumuman ke server), `/admins` (semua
+      pemain: dialog daftar admin online + jabatan + status duty), nama tiap
+      level (1=Junior, 2=Senior, 3=Head, 4=Manager, 5=Owner). Duty otomatis
+      reset saat disconnect. /stats > Informasi Umum kini tampil jabatan
+      admin (mis. "Ya (Level 3 - Head)"). Modul:
+      `Server_Libraries/Admin/Admin_System.pwn`. Tidak perlu skema DB baru
+      (kolom `accounts.admin` sudah ada).
 
 ## Berikutnya — BATCH BARU (permintaan user 2026-10-13)
 
