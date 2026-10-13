@@ -28,7 +28,9 @@ enum Society_Player
     Float:sPStress,     // 0-100, naik jika lapar/haus
     sPNeedsCD,          // cooldown /eat & /drink (GetTickCount)
     sPFactionID,        // id baris fraksi di tabel factions (0 = belum punya fraksi)
-    sPFactionRank       // rank fraksi 1-6 (0 = bukan anggota)
+    sPFactionRank,      // rank fraksi 1-6 (0 = bukan anggota)
+    sPFamilyID,         // id baris keluarga di tabel families (0 = belum punya keluarga)
+    sPFamilyRank        // rank keluarga 1-6 (0 = bukan anggota)
 };
 new Society_PlayerData[MAX_PLAYERS][Society_Player];
 // Catatan: Pawn tidak mendukung array 2 dimensi di dalam enum,

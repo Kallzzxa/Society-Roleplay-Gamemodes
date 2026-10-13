@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS `characters` (
     `stress` FLOAT DEFAULT 0.0,
     `faction_id` INT DEFAULT 0,
     `faction_rank` TINYINT DEFAULT 0,
+    `family_id` INT DEFAULT 0,
+    `family_rank` TINYINT DEFAULT 0,
     `created` DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_account_id` (`account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -53,6 +55,8 @@ CREATE TABLE IF NOT EXISTS `characters` (
 -- ALTER TABLE `characters` ADD COLUMN `stress` FLOAT DEFAULT 0.0;
 -- ALTER TABLE `characters` ADD COLUMN `faction_id` INT DEFAULT 0;
 -- ALTER TABLE `characters` ADD COLUMN `faction_rank` TINYINT DEFAULT 0;
+-- ALTER TABLE `characters` ADD COLUMN `family_id` INT DEFAULT 0;
+-- ALTER TABLE `characters` ADD COLUMN `family_rank` TINYINT DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS `businesses` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -167,3 +171,20 @@ CREATE TABLE IF NOT EXISTS `garages` (
 -- Untuk database yang sudah ada (dibuat sebelum update garasi kota), jalankan:
 -- ALTER TABLE `player_vehicles` ADD COLUMN `garage_id` INT DEFAULT 0 AFTER `fuel`;
 -- (cukup import ulang blok CREATE TABLE `garages` di atas)
+
+-- Skema keluarga/gangster dinamis (update 2026-10-14).
+-- name: nama keluarga. color: warna identitas (0xRRGGBB) untuk nama
+-- anggota & chat. leader_char_id: id karakter ketua (0 = belum ada).
+-- cash: kas keluarga (setor via /famdeposit, ambil ketua via /famwithdraw).
+-- Keanggotaan tersimpan di kolom characters (family_id, family_rank).
+CREATE TABLE IF NOT EXISTS `families` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(32) NOT NULL,
+    `color` INT DEFAULT 0,
+    `leader_char_id` INT DEFAULT 0,
+    `cash` INT DEFAULT 0,
+    INDEX `idx_family_leader` (`leader_char_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update keluarga dinamis), jalankan:
+-- (cukup import ulang blok CREATE TABLE `families` di atas)

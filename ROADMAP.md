@@ -117,10 +117,20 @@ compile 0 error, commit+push per item.
       Kendaraan tersimpan tidak ikut spawn saat karakter load
       (dijaga di `Vehicle_Spawn`) dan tampil "Di Garasi" di /vlist.
       Modul: `Server_Libraries/Garage/Garage_System.pwn`.
-- [ ] **Dynamic Family/Gangster**: tabel `families` (id, name, color,
-      leader_char_id, kas). `/createfamily [nama]` (bayar), `/faminvite`,
-      `/famkick`, rank, `/fam` chat, warna nama & kendaraan keluarga.
-      Basis badside untuk turf/gang war nanti.
+- [x] **Dynamic Family/Gangster** (selesai 2026-10-14): tabel `families`
+      (id, name, color [RGB], leader_char_id, cash) + kolom baru
+      `characters.family_id` & `family_rank`. Pemain: `/createfamily [nama]`
+      (bayar Rp50jt tunai, pendiri jadi Ketua lalu pilih warna identitas
+      via dialog: 8 warna). Pimpinan: `/faminvite [id]` (dialog terima/tolak),
+      `/famkick [id]`, `/setfamrank [id] [rank]` (ketua, rank 1-5:
+      Preman s/d Tangan Kanan, 6=Ketua). Anggota: `/fam [pesan]` (chat
+      berwarna keluarga), `/famquit`, `/faminfo` (info + daftar anggota +
+      kas), `/families` (daftar + detail), `/famcolor` (ketua ganti warna:
+      nama anggota + warna utama kendaraan anggota yang online disamakan),
+      kas keluarga `/famdeposit` & `/famwithdraw` (ketua). Admin 4+:
+      `/famsetleader [id]`. Warna nama via SetPlayerColor (admin on-duty
+      tetap oranye, dikembalikan saat duty off). Basis badside untuk
+      turf/gang war nanti. Modul: `Server_Libraries/Family/Family_System.pwn`.
 - [ ] **Dynamic Zone (Greenzone)**: tabel `zones` (id, name, min_x/min_y/
       max_x/max_y, type). Admin `/createzone [nama] [tipe]` → area persegi.
       Greenzone: damage & tembak dinonaktifkan di dalam area (cek
