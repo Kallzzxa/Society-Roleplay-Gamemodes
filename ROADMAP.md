@@ -89,10 +89,21 @@ compile 0 error, commit+push per item.
       (daftar semua fraksi), `/fquit`, kas fraksi `/fdeposit` & `/fwithdraw`
       (ketua saja). Duty otomatis reset saat disconnect. Modul:
       `Server_Libraries/Faction/Faction_System.pwn`.
-- [ ] **Dynamic Workshop**: tabel `workshops` (id, owner_char_id, name,
-      pos, price, profit). Bengkel milik pemain: `/buyworkshop`,
-      pelanggan `/mod` (warna, komponen, neon) & `/repair`, pemilik
-      ambil profit `/wswithdraw`. Label 3D nama bengkel.
+- [x] **Dynamic Workshop** (selesai 2026-10-14): tabel `workshops`
+      (id, name, owner_char_id, price, profit, pos_x/y/z).
+      Admin: `/createws [nama] [harga]` (level 3+) → pickup + label 3D
+      "[BENGKEL]" (nama + harga + status Dijual/Pemilik).
+      Pemain: `/buyworkshop` (dekat pickup, tanpa pemilik), `/wsinfo`
+      (dialog kelola: ambil keuntungan, jual kembali 70%), `/wswithdraw`.
+      Pelanggan (wajib mengemudi, dekat bengkel yang sudah ada pemiliknya):
+      `/repair` (Rp150rb, gratis bila tidak rusak),
+      `/mod` → ganti warna (Rp200rb, input 2 warna 0-126),
+      pasang komponen (7 kategori: spoiler/hood/exhaust/nitro/stereo/
+      hidrolik/lampu, 24 item, harga Rp100-600rb),
+      pasang neon biru/pink (Rp500rb, objek underglow 18647/18648,
+      bisa dilepas gratis). Biaya jasa masuk profit pemilik bengkel;
+      gratis bila pelanggan adalah pemilik bengkel. Jumlah bengkel tampil
+      di /stats > Aset. Modul: `Server_Libraries/Workshop/Workshop_System.pwn`.
 - [ ] **Dynamic Garage Kota**: tabel `garages` (id, name, pos, fee).
       Garasi umum: `/garage` simpan kendaraan pribadi (despawn + tercatat),
       dialog ambil kembali. Solusi parkir saat slot jalanan penuh.

@@ -130,3 +130,21 @@ CREATE TABLE IF NOT EXISTS `factions` (
 
 -- Untuk database yang sudah ada (dibuat sebelum update fraksi dinamis), jalankan:
 -- (cukup import ulang blok CREATE TABLE `factions` di atas)
+
+-- Skema bengkel dinamis (update 2026-10-14).
+-- owner_char_id: id karakter pemilik (0 = belum ada pemilik / masih dijual).
+-- profit: keuntungan dari jasa pelanggan (/repair & /mod), diambil via /wswithdraw.
+CREATE TABLE IF NOT EXISTS `workshops` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(32) NOT NULL,
+    `owner_char_id` INT DEFAULT 0,
+    `price` INT DEFAULT 0,
+    `profit` INT DEFAULT 0,
+    `pos_x` FLOAT NOT NULL,
+    `pos_y` FLOAT NOT NULL,
+    `pos_z` FLOAT NOT NULL,
+    INDEX `idx_workshop_owner` (`owner_char_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update bengkel dinamis), jalankan:
+-- (cukup import ulang blok CREATE TABLE `workshops` di atas)
