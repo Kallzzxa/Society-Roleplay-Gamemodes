@@ -24,6 +24,7 @@
 //  - Rumah dinamis: /createhouse (admin), /buyhouse, /enterhouse, /exithouse, /lockhouse, /sellhouse, /houseinfo
 //  - Fraksi dinamis: /createfaction (admin), /finvite, /fkick, /setrank, /f, /duty (seragam+senjata dinas), /finfo, /factions, /fdeposit, /fwithdraw, /fsetleader (admin), /fquit
 //  - Bengkel dinamis: /createws (admin), /buyworkshop, /wsinfo, /wswithdraw, /mod (warna, komponen, neon), /repair
+//  - Garasi kota dinamis: /creategarage (admin), /garage (titip/ambil kendaraan), /garages
 //  - Perintah pemain: /stats, /money, /save, /help
 //  - Perintah admin: /setadmin (RCON), /adminduty, /admins, /kick, /ban
 //
@@ -237,6 +238,10 @@ stock ResetPlayerVars(playerid)
 // Modul bengkel dinamis (pola sama seperti modul bisnis).
 #include "Server_Libraries/Workshop/Workshop_System.pwn"
 
+// Modul garasi kota dinamis (pola sama seperti modul bengkel,
+// memakai data kendaraan vGarageID dari modul Vehicle).
+#include "Server_Libraries/Garage/Garage_System.pwn"
+
 // SaveCharacter: menyimpan data karakter pemain ke database.
 stock SaveCharacter(playerid)
 {
@@ -319,6 +324,7 @@ public OnGameModeInit()
     Vehicle_LoadAll();  // muat kendaraan pribadi dari database
     Faction_LoadAll();  // muat fraksi dinamis dari database
     Workshop_LoadAll(); // muat bengkel dinamis dari database
+    Garage_LoadAll();   // muat garasi kota dinamis dari database
     print("[SocietyRP] Gamemode dimuat: Society RP v1.0");
     return 1;
 }
@@ -804,7 +810,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (strcmp(cmd, "/help", true) == 0)
     {
         Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan",
-            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu\n/enterhouse - Masuk ke rumah\n/exithouse - Keluar dari dalam rumah\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nFraksi:\n/finfo - Info fraksimu & daftar anggota\n/factions - Daftar semua fraksi di server\n/f [pesan] - Chat khusus anggota fraksi\n/duty - Mulai/selesai duty (seragam & senjata dinas, di markas)\n/finvite [id] - Undang pemain (Wakil Ketua+)\n/fkick [id] - Keluarkan anggota (Wakil Ketua+)\n/fquit - Keluar dari fraksi\n/setrank [id] [rank] - Atur rank anggota (Ketua)\n/fdeposit [jumlah] - Setor ke kas fraksi\n/fwithdraw [jumlah] - Ambil kas fraksi (Ketua)\n\nBengkel:\n/buyworkshop - Membeli bengkel di dekatmu\n/wsinfo - Mengelola bengkelmu (ambil untung, jual)\n/wswithdraw - Mengambil keuntungan bengkel\n/repair - Perbaiki kendaraanmu di bengkel\n/mod - Modifikasi kendaraan (warna, komponen, neon) di bengkel\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/adminduty - Nyalakan/matikan mode duty (nama berwarna oranye)\n/admins - Melihat daftar admin online\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] - (Admin 3+) Buat rumah dinamis (2 langkah)\n/createfaction [tipe] [nama] - (Admin 3+) Buat fraksi dinamis di posisimu\n/fsetleader [id] - (Admin 4+) Tunjuk ketua fraksi\n/createws [nama] [harga] - (Admin 3+) Buat bengkel dinamis di posisimu\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
+            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu\n/enterhouse - Masuk ke rumah\n/exithouse - Keluar dari dalam rumah\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nFraksi:\n/finfo - Info fraksimu & daftar anggota\n/factions - Daftar semua fraksi di server\n/f [pesan] - Chat khusus anggota fraksi\n/duty - Mulai/selesai duty (seragam & senjata dinas, di markas)\n/finvite [id] - Undang pemain (Wakil Ketua+)\n/fkick [id] - Keluarkan anggota (Wakil Ketua+)\n/fquit - Keluar dari fraksi\n/setrank [id] [rank] - Atur rank anggota (Ketua)\n/fdeposit [jumlah] - Setor ke kas fraksi\n/fwithdraw [jumlah] - Ambil kas fraksi (Ketua)\n\nBengkel:\n/buyworkshop - Membeli bengkel di dekatmu\n/wsinfo - Mengelola bengkelmu (ambil untung, jual)\n/wswithdraw - Mengambil keuntungan bengkel\n/repair - Perbaiki kendaraanmu di bengkel\n/mod - Modifikasi kendaraan (warna, komponen, neon) di bengkel\n\nGarasi Kota:\n/garage - Titip / ambil kendaraan di garasi terdekat\n/garages - Daftar semua garasi kota\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/adminduty - Nyalakan/matikan mode duty (nama berwarna oranye)\n/admins - Melihat daftar admin online\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] - (Admin 3+) Buat rumah dinamis (2 langkah)\n/createfaction [tipe] [nama] - (Admin 3+) Buat fraksi dinamis di posisimu\n/fsetleader [id] - (Admin 4+) Tunjuk ketua fraksi\n/createws [nama] [harga] - (Admin 3+) Buat bengkel dinamis di posisimu\n/creategarage [nama] [biaya] - (Admin 3+) Buat garasi kota di posisimu\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
             "Tutup", "");
         return 1;
     }
@@ -1636,6 +1642,82 @@ public OnPlayerCommandText(playerid, cmdtext[])
             return 1;
         }
         Workshop_ShowModMenu(playerid);
+        return 1;
+    }
+
+    // /creategarage [nama] [biaya] - admin level 3+: membuat garasi kota di posisi admin
+    if (strcmp(cmd, "/creategarage", true) == 0)
+    {
+        if (!IsAdmin(playerid, 3))
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda tidak memiliki akses ke perintah ini.");
+            return 1;
+        }
+        if (g_SQL == MYSQL_INVALID_HANDLE)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Database sedang offline.");
+            return 1;
+        }
+        new snama[32], sbiaya[32];
+        snama = strtok(cmdtext, idx);
+        sbiaya = strtok(cmdtext, idx);
+        if (!strlen(snama) || !strlen(sbiaya))
+        {
+            SendClientMessage(playerid, COLOR_GREY, "Gunakan: /creategarage [nama] [biaya]");
+            SendClientMessage(playerid, COLOR_GREY, "Contoh: /creategarage Garasi_Pusat 50000 (spasi diganti _)");
+            return 1;
+        }
+        if (strlen(snama) < 3)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Nama garasi minimal 3 karakter.");
+            return 1;
+        }
+        if (!IsNumeric(sbiaya))
+        {
+            SendClientMessage(playerid, COLOR_RED, "Biaya harus berupa angka.");
+            return 1;
+        }
+        new fee = strval(sbiaya);
+        if (fee < 0 || fee > 500000)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Biaya titip harus Rp0 - Rp500.000.");
+            return 1;
+        }
+        for (new i = 0; snama[i] != EOS; i++)
+        {
+            if (snama[i] == '_') snama[i] = ' ';
+        }
+        Garage_Create(playerid, snama, fee);
+        return 1;
+    }
+
+    // /garage - menu garasi terdekat: titip / ambil / info kendaraan
+    if (strcmp(cmd, "/garage", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        new slot = Garage_Nearest(playerid);
+        if (slot == -1)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Tidak ada garasi di dekatmu.");
+            return 1;
+        }
+        Garage_ShowMain(playerid, slot);
+        return 1;
+    }
+
+    // /garages - daftar semua garasi kota di server
+    if (strcmp(cmd, "/garages", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        Garage_ShowList(playerid);
         return 1;
     }
 

@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS `player_vehicles` (
     `plate` VARCHAR(16) NOT NULL,
     `locked` TINYINT DEFAULT 0,
     `fuel` FLOAT DEFAULT 100.0,
+    `garage_id` INT DEFAULT 0,
     INDEX `idx_vehicle_char` (`char_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -148,3 +149,21 @@ CREATE TABLE IF NOT EXISTS `workshops` (
 
 -- Untuk database yang sudah ada (dibuat sebelum update bengkel dinamis), jalankan:
 -- (cukup import ulang blok CREATE TABLE `workshops` di atas)
+
+-- Skema garasi kota dinamis (update 2026-10-14).
+-- fee: biaya titip per kendaraan, dibayar pemain saat menyimpan kendaraan.
+-- Kendaraan yang dititipkan tercatat di player_vehicles.garage_id
+-- (0 = di jalanan, >0 = id garasi tempat kendaraan tersimpan).
+CREATE TABLE IF NOT EXISTS `garages` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(32) NOT NULL,
+    `pos_x` FLOAT NOT NULL,
+    `pos_y` FLOAT NOT NULL,
+    `pos_z` FLOAT NOT NULL,
+    `fee` INT DEFAULT 0,
+    INDEX `idx_garage_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update garasi kota), jalankan:
+-- ALTER TABLE `player_vehicles` ADD COLUMN `garage_id` INT DEFAULT 0 AFTER `fuel`;
+-- (cukup import ulang blok CREATE TABLE `garages` di atas)

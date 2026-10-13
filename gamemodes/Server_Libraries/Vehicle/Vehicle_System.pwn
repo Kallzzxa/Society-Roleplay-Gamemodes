@@ -57,6 +57,7 @@ new Float:vPosZ[MAX_PVEH];
 new Float:vAngle[MAX_PVEH];         // arah hadap saat parkir
 new vVehID[MAX_PVEH];               // id kendaraan di server (INVALID_VEHICLE_ID jika belum spawn)
 new bool:vSpawned[MAX_PVEH];        // true jika sedang ter-spawn di dunia
+new vGarageID[MAX_PVEH];            // id DB garasi tempat kendaraan dititipkan (0 = di jalanan)
 
 // Data sementara per pemain.
 new pVehBuyCat[MAX_PLAYERS];        // indeks katalog yang dipilih di dialog beli
@@ -165,9 +166,11 @@ stock Vehicle_MakePlate(dest[], len)
 //================================================================
 
 // Vehicle_Spawn: memunculkan satu kendaraan dari slot ke dunia.
+// Kendaraan yang dititipkan di garasi tidak boleh ter-spawn.
 stock Vehicle_Spawn(slot)
 {
     if (slot < 0 || slot >= MAX_PVEH || !vExists[slot]) return 0;
+    if (vGarageID[slot] > 0) return 0;
     if (vSpawned[slot]) return 1;
     vVehID[slot] = CreateVehicle(vModel[slot],
         vPosX[slot], vPosY[slot], vPosZ[slot], vAngle[slot],
@@ -204,8 +207,8 @@ stock Vehicle_SaveSlot(slot)
     }
     new query[256];
     mysql_format(g_SQL, query, sizeof(query),
-        "UPDATE player_vehicles SET pos_x = %f, pos_y = %f, pos_z = %f, angle = %f, fuel = %f, locked = %d WHERE id = %d",
-        vPosX[slot], vPosY[slot], vPosZ[slot], vAngle[slot], vFuel[slot], vLocked[slot], vDBID[slot]);
+        "UPDATE player_vehicles SET pos_x = %f, pos_y = %f, pos_z = %f, angle = %f, fuel = %f, locked = %d, garage_id = %d WHERE id = %d",
+        vPosX[slot], vPosY[slot], vPosZ[slot], vAngle[slot], vFuel[slot], vLocked[slot], vGarageID[slot], vDBID[slot]);
     mysql_tquery(g_SQL, query);
     return 1;
 }
@@ -412,6 +415,7 @@ stock Vehicle_Buy(playerid, catidx)
     vAngle[slot] = pa;
     vVehID[slot] = INVALID_VEHICLE_ID;
     vSpawned[slot] = false;
+    vGarageID[slot] = 0; // kendaraan baru langsung ada di jalanan
     Vehicle_Spawn(slot);
 
     GivePlayerMoney(playerid, -g_VehCatPrice[catidx]);
@@ -560,7 +564,11 @@ Dialog:VehManage(playerid, response, listitem, inputtext[])
     }
     else if (listitem == 2)
     {
-        if (vSpawned[slot])
+        if (vGarageID[slot] > 0)
+        {
+            SendClientMessage(playerid, COLOR_YELLOW, "Kendaraan ini tersimpan di garasi. Ambil dengan /garage di garasi tersebut.");
+        }
+        else if (vSpawned[slot])
         {
             SetPlayerCheckpoint(playerid, vPosX[slot], vPosY[slot], vPosZ[slot], 4.0);
             SendClientMessage(playerid, COLOR_YELLOW, "Lokasi kendaraanmu ditandai di peta (checkpoint merah).");
@@ -591,7 +599,8 @@ stock Vehicle_ShowList(playerid)
     {
         if (!vExists[i] || vOwnerCharID[i] != charid) continue;
         Vehicle_CatName(vModel[i], nama, sizeof(nama));
-        if (vLocked[i]) format(kunci, sizeof(kunci), "Terkunci");
+        if (vGarageID[i] > 0) format(kunci, sizeof(kunci), "Di Garasi");
+        else if (vLocked[i]) format(kunci, sizeof(kunci), "Terkunci");
         else format(kunci, sizeof(kunci), "Terbuka");
         format(baris, sizeof(baris), "%s (%s) - %s", nama, vPlate[i], kunci);
         if (count > 0) strcat(list, "\n", sizeof(list));
@@ -629,6 +638,7 @@ public OnVehiclesLoaded()
         cache_get_value_name(i, "plate", vPlate[i], sizeof(vPlate[]));
         cache_get_value_name_int(i, "locked", tmp);        vLocked[i] = tmp;
         cache_get_value_name_float(i, "fuel", ftmp);       vFuel[i] = ftmp;
+        cache_get_value_name_int(i, "garage_id", tmp);     vGarageID[i] = tmp;
         vOwnerName[i][0] = EOS;
         vVehID[i] = INVALID_VEHICLE_ID;
         vSpawned[i] = false;
