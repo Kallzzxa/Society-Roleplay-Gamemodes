@@ -16,7 +16,33 @@ commit + push, lalu tandai selesai di file ini.
       menit, efek lapar/haus/stress ke nyawa, command /makan & /minum,
       tersimpan di DB (kolom hunger/thirst/stress)
 
-## Berikutnya (kerjakan berurutan)
+## Berikutnya — PRIORITAS (permintaan user 2026-10-13)
+
+Desain acuan: pola standar komunitas SA-MP (bisnis/rumah/kendaraan dinamis via
+DB + pickup/label 3D + dialog easydialog + textdraw oldschool-modern).
+Struktur: modul baru di `Server_Libraries/<Nama>/`, skema di `society.sql`,
+Bahasa Indonesia, compile 0 error, commit+push tiap item.
+
+- [ ] **Dynamic Business**: tabel `businesses` (id, name, owner_char_id, type,
+      price, profit, pos_x/y/z, locked). Admin: `/buatbisnis [nama] [tipe] [harga]`
+      → pickup + label 3D. Pemain: `/belibisnis` (dekat pickup), `/binfo`
+      (dialog: ambil keuntungan `/bambil`, kunci), `/jualbisnis`. Profit
+      bertambah tiap payday bila ada pemilik.
+- [ ] **Dynamic House**: tabel `houses` (id, owner_char_id, price, entrance
+      pos, exit pos+interior, locked). Admin: `/buathouse [harga] [interior]`.
+      Pemain: `/belirumah`, `/masukrumah` & `/keluarrumah` (via pickup),
+      `/kuncirumah`. Label 3D: nama jalan + status (Dijual/Pemilik).
+- [ ] **Private Vehicle**: tabel `player_vehicles` (id, char_id, model,
+      pos_x/y/z, angle, color1, color2, plate, locked, fuel). Maks 2 per
+      karakter. `/belikendaraan` (daftar model + harga, spawn di dekat pemain),
+      `/vparkir` (simpan posisi), `/vkunci`, spawn otomatis saat karakter load,
+      despawn saat disconnect. Textdraw kecil info kendaraan saat mengemudi.
+- [ ] **Admin DB**: level admin SUDAH tersimpan di `accounts.admin`
+      (via /setadmin). Tambahan: `/adminduty` (tandai on-duty, nama berwarna),
+      `/admins` (daftar admin online + level), nama tiap level
+      (1=Junior, 2=Senior, 3=Head, 4=Manager, 5=Owner).
+
+## Berikutnya — umum
 
 - [ ] Sistem payday: gaji tiap 1 jam in-game, bonus level, pajak
 - [ ] Pekerjaan 1: supir bus (checkpoint + gaji per checkpoint)
