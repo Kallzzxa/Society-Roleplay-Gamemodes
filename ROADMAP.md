@@ -42,6 +42,69 @@ Bahasa Indonesia, compile 0 error, commit+push tiap item.
       `/admins` (daftar admin online + level), nama tiap level
       (1=Junior, 2=Senior, 3=Head, 4=Manager, 5=Owner).
 
+## Berikutnya — FITUR SERU DARI REVIEW SERVER (permintaan user 2026-10-13)
+
+Dikerjakan SETELAH 4 item prioritas di atas. Referensi: fitur-fitur yang
+paling sering di-highlight di review server SA-MP Indonesia (Ace Pride
+Roleplay, Ravage Roleplay, dll). Gaya tetap: oldschool-modern, textdraw,
+Bahasa Indonesia, easydialog, compile 0 error, commit+push per item.
+
+### Kriminal (badside)
+- [ ] **Sistem Rampok**: rampok bank/toko/ATM. `/rampok` di titik rampok →
+      progress bar textdraw (waktu berjalan), alarm ke polisi online, cooldown
+      per titik, hasil uang kotor. Tabel `robbery_spots`.
+- [ ] **Black Market**: titik tersembunyi (acak) beli senjata & narkoba.
+      `/bm` di dekat titik → dialog daftar barang + harga. Stok terbatas.
+- [ ] **Narkoba**: `/tanam` (benih, butuh lahan), tumbuh real-time,
+      `/panen`, `/jualnarkoba` ke bandar/pemain. Risiko: polisi bisa
+      `/sita`. Tabel `drug_plants`.
+
+### Pekerjaan (goodside)
+- [ ] **Job Sopir Truck**: `/kerja` sopir truck → ambil kargo, checkpoint
+      rute antar kota, bayaran per jarak. Textdraw info kargo & jarak.
+- [ ] **Job Mancing**: `/mancing` di dekat air → timing minigame via
+      textdraw, dapat ikan (jenis + berat), `/jualikan`.
+- [ ] **Job Nambang**: tambang di LV → `/nambang` ayun pickaxe (anim),
+      dapat ore, `/jualore`.
+- [ ] **Job Sopir Taxi**: `/taxi` duty → argo textdraw berjalan per jarak
+      saat ada penumpang, `/argometer`.
+
+### Kendaraan
+- [ ] **Sistem Bensin**: kendaraan punya fuel, berkurang saat dikendarai.
+      Pom bensin: `/isibensin` di dekat pompa, bayar per liter. Textdraw
+      indikator bensin saat mengemudi. (Butuh kolom `fuel` di
+      `player_vehicles`.)
+- [ ] **Asuransi Kendaraan**: kendaraan hancur/tenggelam → `/asuransi`
+      tebus dengan biaya, spawn kembali di garasi/pom terdekat.
+- [ ] **Bagasi & Kap**: `/vbagasi` (simpan/ambil barang: senjata, narkoba,
+      ikan) dan `/vkap` (buka/tutup kap & bagasi visual). Tabel
+      `vehicle_trunk`.
+
+### Sosial & QoL
+- [ ] **Animasi**: `/anim` → dialog kategori, 100+ animasi (duduk, dansa,
+      tiarap, dll). `/stopanim`.
+- [ ] **Toys/Aksesoris**: `/toy` pasang aksesoris (topi, bandana, kacamata),
+      `/helm` di motor, `/masker` sembunyikan nama (nametag off).
+- [ ] **Boombox**: `/boombox` taruh boombox → streaming musik URL di
+      sekitar, `/matikanmusik`. (Pakai PlayAudioStreamForPlayer.)
+- [ ] **Nikah**: `/lamar [id]` → target `/terima`, status pasangan di
+      `/stats`, `/cerai`.
+- [ ] **ATM Dinamis**: objek ATM tersebar → `/atm` tarik/setor/cek saldo
+      di mana pun. (Butuh sistem bank/tabungan — gabung di item ini.)
+- [ ] **Daily Reward**: bonus login harian beruntun (streak), klaim via
+      dialog saat login. Tabel/kolom `login_streak`, `last_login`.
+- [ ] **Dadu**: `/dadu [taruhan] [id]` judi dadu vs pemain, pemenang ambil
+      pot. Batas taruhan.
+- [ ] **Shareloc**: `/shareloc [id]` kirim checkpoint lokasi ke pemain
+      lain (misi, jemputan).
+
+### Fraksi & hukum
+- [ ] **Wanted & Penjara**: wanted level naik saat kriminal terlihat,
+      polisi `/tahan [id]` → penjara timed di sel, `/bebaskan`. Tabel
+      `jail` atau kolom `jail_time`.
+- [ ] **Dynamic Gate**: `/buatgate` (admin/fraksi) → gate otomatis buka
+      via `/gate` atau tombol klakson di dekatnya. Tabel `gates`.
+
 ## Berikutnya — umum
 
 - [ ] Sistem payday: gaji tiap 1 jam in-game, bonus level, pajak
