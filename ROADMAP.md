@@ -7,7 +7,11 @@ commit + push, lalu tandai selesai di file ini.
 ## Selesai
 
 - [x] v1.0 — Inti: akun register/login (SHA256), UCP + karakter (maks 3), MySQL,
-      rupiah, autosave, command dasar (/stats /money /save /help /setadmin /kick /ban)
+      rupiah, autosave, command dasar (/stats /money /save /help /setadmin /kick /ban).
+      `/stats` sudah dirombak 2026-10-13 menjadi menu dialog bertingkat:
+      Informasi Umum, Keuangan (tunai + bank + total kekayaan),
+      Kebutuhan (label Kenyang/Lapar, Segar/Haus, Santai/Stres Berat),
+      Aset (jumlah bisnis milik pemain; rumah & kendaraan menyusul).
 - [x] v2.0 — Refactor modular: `Society_Main.pwn` + `Server_Libraries/`
       (Mysql/Mysql_Connect.inc, Utils/Utils_Color.pwn, Utils/Utils_Enum.pwn),
       dialog pakai easydialog, skema DB via `society.sql` (tanpa auto-create),

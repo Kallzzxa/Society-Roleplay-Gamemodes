@@ -581,9 +581,91 @@ Dialog:CreateSkin(playerid, response, listitem, inputtext[])
     return 1;
 }
 
-// Dialog:Stats - dialog info, abaikan respon.
-Dialog:Stats(playerid, response, listitem, inputtext[])
+// Stats_NeedLabel: label kondisi makan/minum: >=70 baik, 30-69 cukup, <30 buruk.
+stock Stats_NeedLabel(Float:value, dest[], len, good[], bad[])
 {
+    if (value >= 70.0) format(dest, len, "%s", good);
+    else if (value >= 30.0) format(dest, len, "Cukup");
+    else format(dest, len, "%s", bad);
+}
+
+// Stats_StressLabel: label stress: <30 santai, <70 tegang, >=70 stres berat.
+stock Stats_StressLabel(Float:value, dest[], len)
+{
+    if (value < 30.0) format(dest, len, "Santai");
+    else if (value < 70.0) format(dest, len, "Tegang");
+    else format(dest, len, "Stres Berat");
+}
+
+// Stats_ShowMenu: menampilkan menu utama /stats.
+stock Stats_ShowMenu(playerid)
+{
+    Dialog_Show(playerid, StatsMenu, DIALOG_STYLE_LIST, "Statistik Karakter",
+        "Informasi Umum\nKeuangan\nKebutuhan\nAset",
+        "Pilih", "Tutup");
+}
+
+// Dialog:StatsMenu - menu utama /stats (dialog bertingkat).
+Dialog:StatsMenu(playerid, response, listitem, inputtext[])
+{
+    if (!response) return 1;
+    new info[512];
+    switch (listitem)
+    {
+        case 0: // Informasi Umum
+        {
+            new gender[12], admin[24];
+            if (pGender[playerid] == 1) format(gender, sizeof(gender), "Perempuan");
+            else format(gender, sizeof(gender), "Laki-laki");
+            if (Society_PlayerData[playerid][sPAdmin] > 0) format(admin, sizeof(admin), "Ya (Level %d)", Society_PlayerData[playerid][sPAdmin]);
+            else format(admin, sizeof(admin), "Tidak");
+            format(info, sizeof(info),
+                "Nama: %s\nUmur: %d tahun\nJenis Kelamin: %s\nLevel: %d\nEXP: %d\nAdmin: %s",
+                pCharName[playerid], pAge[playerid], gender,
+                pLevel[playerid], pExp[playerid], admin);
+            Dialog_Show(playerid, StatsSub, DIALOG_STYLE_MSGBOX, "Informasi Umum", info, "Kembali", "");
+        }
+        case 1: // Keuangan
+        {
+            new uang[32], bank[32], total[32];
+            pMoney[playerid] = GetPlayerMoney(playerid);
+            FormatRupiah(pMoney[playerid], uang, sizeof(uang));
+            FormatRupiah(pBank[playerid], bank, sizeof(bank));
+            FormatRupiah(pMoney[playerid] + pBank[playerid], total, sizeof(total));
+            format(info, sizeof(info),
+                "Uang Tunai: %s\nTabungan Bank: %s\nTotal Kekayaan: %s",
+                uang, bank, total);
+            Dialog_Show(playerid, StatsSub, DIALOG_STYLE_MSGBOX, "Keuangan", info, "Kembali", "");
+        }
+        case 2: // Kebutuhan
+        {
+            new makan[16], minum[16], stress[16];
+            Stats_NeedLabel(Society_PlayerData[playerid][sPHunger], makan, sizeof(makan), "Kenyang", "Lapar");
+            Stats_NeedLabel(Society_PlayerData[playerid][sPThirst], minum, sizeof(minum), "Segar", "Haus");
+            Stats_StressLabel(Society_PlayerData[playerid][sPStress], stress, sizeof(stress));
+            format(info, sizeof(info),
+                "Makan: %d (%s)\nMinum: %d (%s)\nStress: %d (%s)\n\nJaga kebutuhanmu dengan /eat dan /drink.",
+                floatround(Society_PlayerData[playerid][sPHunger], floatround_round), makan,
+                floatround(Society_PlayerData[playerid][sPThirst], floatround_round), minum,
+                floatround(Society_PlayerData[playerid][sPStress], floatround_round), stress);
+            Dialog_Show(playerid, StatsSub, DIALOG_STYLE_MSGBOX, "Kebutuhan", info, "Kembali", "");
+        }
+        case 3: // Aset
+        {
+            new biz = Business_CountOwned(Society_PlayerData[playerid][sPCharID]);
+            format(info, sizeof(info),
+                "Bisnis: %d\nRumah: -\nKendaraan: -\n\n(Rumah & kendaraan segera hadir)",
+                biz);
+            Dialog_Show(playerid, StatsSub, DIALOG_STYLE_MSGBOX, "Aset", info, "Kembali", "");
+        }
+    }
+    return 1;
+}
+
+// Dialog:StatsSub - sub-dialog /stats, tombol Kembali membuka menu lagi.
+Dialog:StatsSub(playerid, response, listitem, inputtext[])
+{
+    if (response) Stats_ShowMenu(playerid);
     return 1;
 }
 
@@ -602,7 +684,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     new cmd[32], idx = 0;
     cmd = strtok(cmdtext, idx);
 
-    // /stats - melihat statistik karakter
+    // /stats - menu statistik karakter (dialog bertingkat: umum, keuangan, kebutuhan, aset)
     if (strcmp(cmd, "/stats", true) == 0)
     {
         if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
@@ -610,22 +692,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
             SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
             return 1;
         }
-        new info[512], uang[32], bank[32], gender[12], admin[8];
-        FormatRupiah(pMoney[playerid], uang, sizeof(uang));
-        FormatRupiah(pBank[playerid], bank, sizeof(bank));
-        if (pGender[playerid] == 1) format(gender, sizeof(gender), "Perempuan");
-        else format(gender, sizeof(gender), "Laki-laki");
-        if (Society_PlayerData[playerid][sPAdmin] > 0) format(admin, sizeof(admin), "Ya (%d)", Society_PlayerData[playerid][sPAdmin]);
-        else format(admin, sizeof(admin), "Tidak");
-        format(info, sizeof(info),
-            "Nama: %s\nUmur: %d tahun\nJenis Kelamin: %s\nLevel: %d\nEXP: %d\nUang: %s\nTabungan Bank: %s\nMakan: %d\nMinum: %d\nStress: %d\nAdmin: %s",
-            pCharName[playerid], pAge[playerid], gender,
-            pLevel[playerid], pExp[playerid], uang, bank,
-            floatround(Society_PlayerData[playerid][sPHunger], floatround_round),
-            floatround(Society_PlayerData[playerid][sPThirst], floatround_round),
-            floatround(Society_PlayerData[playerid][sPStress], floatround_round),
-            admin);
-        Dialog_Show(playerid, Stats, DIALOG_STYLE_MSGBOX, "Statistik Karakter", info, "Tutup", "");
+        Stats_ShowMenu(playerid);
         return 1;
     }
 

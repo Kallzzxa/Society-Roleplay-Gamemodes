@@ -167,6 +167,17 @@ stock Business_OwnedNear(playerid)
 // AKSI BISNIS
 //================================================================
 
+// Business_CountOwned: jumlah bisnis milik satu karakter (untuk /stats).
+stock Business_CountOwned(charid)
+{
+    new count = 0;
+    for (new i = 0; i < MAX_BUSINESS; i++)
+    {
+        if (bExists[i] && bOwnerCharID[i] == charid) count++;
+    }
+    return count;
+}
+
 // Business_Create: admin membuat bisnis baru di posisinya (simpan ke DB).
 stock Business_Create(playerid, const name[], type, price)
 {
