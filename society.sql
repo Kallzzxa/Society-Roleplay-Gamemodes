@@ -38,6 +38,14 @@ CREATE TABLE IF NOT EXISTS `characters` (
     `vw` INT DEFAULT 0,
     `health` FLOAT DEFAULT 100.0,
     `armour` FLOAT DEFAULT 0.0,
+    `hunger` FLOAT DEFAULT 100.0,
+    `thirst` FLOAT DEFAULT 100.0,
+    `stress` FLOAT DEFAULT 0.0,
     `created` DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_account_id` (`account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update ini), jalankan:
+-- ALTER TABLE `characters` ADD COLUMN `hunger` FLOAT DEFAULT 100.0;
+-- ALTER TABLE `characters` ADD COLUMN `thirst` FLOAT DEFAULT 100.0;
+-- ALTER TABLE `characters` ADD COLUMN `stress` FLOAT DEFAULT 0.0;

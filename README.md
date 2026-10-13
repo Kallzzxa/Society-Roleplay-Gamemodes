@@ -10,7 +10,8 @@ Gamemode SA-MP 0.3.7 untuk server roleplay Indonesia bertema oldschool.
 - **Dialog memakai easyDialog:** tanpa ID dialog manual, anti tabrakan ID.
 - **Autosave** tiap 10 menit + perintah `/save` manual. Posisi, nyawa, armour, uang, dan interior tersimpan saat keluar.
 - **Mata uang Rupiah** dengan format `Rp1.500.000`.
-- **Perintah pemain:** `/stats`, `/uang`, `/save`, `/bantuan`.
+- **Perintah pemain:** `/stats`, `/uang`, `/makan`, `/minum`, `/save`, `/bantuan`.
+- **Sistem kebutuhan (makan/minum/stress):** textdraw bar gaya oldschool di kanan bawah layar, berkurang tiap menit; kalau lapar/haus sampai 0, nyawa berkurang. Tersimpan di database.
 - **Perintah admin:** `/setadmin` (khusus RCON), `/kick`, `/ban`.
 - Gaya oldschool: tanpa marker global, interior enter/exit dimatikan, waktu siang hari.
 

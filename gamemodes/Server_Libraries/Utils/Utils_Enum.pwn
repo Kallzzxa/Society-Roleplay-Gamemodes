@@ -22,7 +22,11 @@ enum Society_Player
     sPLoginTries,       // jumlah percobaan login yang gagal
     bool:sPLogged,      // true jika akun sudah login
     sPCharCount,        // jumlah karakter milik akun (maks 3)
-    sPTempPass[MAX_TEMP_PASS] // kata sandi sementara saat register/login (dihapus setelah dipakai)
+    sPTempPass[MAX_TEMP_PASS], // kata sandi sementara saat register/login (dihapus setelah dipakai)
+    Float:sPHunger,     // 0-100, berkurang tiap menit
+    Float:sPThirst,     // 0-100, berkurang tiap menit
+    Float:sPStress,     // 0-100, naik jika lapar/haus
+    sPNeedsCD           // cooldown /makan & /minum (GetTickCount)
 };
 new Society_PlayerData[MAX_PLAYERS][Society_Player];
 // Catatan: Pawn tidak mendukung array 2 dimensi di dalam enum,

@@ -12,6 +12,9 @@ commit + push, lalu tandai selesai di file ini.
       (Mysql/Mysql_Connect.inc, Utils/Utils_Color.pwn, Utils/Utils_Enum.pwn),
       dialog pakai easydialog, skema DB via `society.sql` (tanpa auto-create),
       enum `Society_Player`, repo berisi full server package (pawno, plugins, dsb.)
+- [x] Sistem kebutuhan: textdraw makan/minum/stress (bar oldschool), decay tiap
+      menit, efek lapar/haus/stress ke nyawa, command /makan & /minum,
+      tersimpan di DB (kolom hunger/thirst/stress)
 
 ## Berikutnya (kerjakan berurutan)
 

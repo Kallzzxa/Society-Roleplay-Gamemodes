@@ -28,6 +28,7 @@
 #include "Server_Libraries/Utils/Utils_Color.pwn"
 #include "Server_Libraries/Utils/Utils_Enum.pwn"
 #include "Server_Libraries/Mysql/Mysql_Connect.inc"
+#include "Server_Libraries/Needs/Needs_System.pwn"
 
 main(){}
 
@@ -169,6 +170,10 @@ stock ResetPlayerVars(playerid)
     Society_PlayerData[playerid][sPAdmin] = 0;
     Society_PlayerData[playerid][sPCharCount] = 0;
     Society_PlayerData[playerid][sPTempPass][0] = EOS;
+    Society_PlayerData[playerid][sPHunger] = 100.0;
+    Society_PlayerData[playerid][sPThirst] = 100.0;
+    Society_PlayerData[playerid][sPStress] = 0.0;
+    Society_PlayerData[playerid][sPNeedsCD] = 0;
     for (new i = 0; i < 3; i++)
     {
         sPCharList[playerid][i][0] = EOS;
@@ -215,10 +220,12 @@ stock SaveCharacter(playerid)
     pMoney[playerid] = GetPlayerMoney(playerid);
     new query[512];
     mysql_format(g_SQL, query, sizeof(query),
-        "UPDATE characters SET money = %d, bank = %d, level = %d, exp = %d, pos_x = %f, pos_y = %f, pos_z = %f, interior = %d, vw = %d, health = %f, armour = %f WHERE id = %d",
+        "UPDATE characters SET money = %d, bank = %d, level = %d, exp = %d, pos_x = %f, pos_y = %f, pos_z = %f, interior = %d, vw = %d, health = %f, armour = %f, hunger = %f, thirst = %f, stress = %f WHERE id = %d",
         pMoney[playerid], pBank[playerid], pLevel[playerid], pExp[playerid],
         x, y, z, GetPlayerInterior(playerid), GetPlayerVirtualWorld(playerid),
-        hp, ap, Society_PlayerData[playerid][sPCharID]);
+        hp, ap,
+        Society_PlayerData[playerid][sPHunger], Society_PlayerData[playerid][sPThirst], Society_PlayerData[playerid][sPStress],
+        Society_PlayerData[playerid][sPCharID]);
     mysql_tquery(g_SQL, query);
     return 1;
 }
@@ -275,6 +282,7 @@ public OnGameModeInit()
         return 1;
     }
     SetTimer("AutoSave", 600000, true); // autosave tiap 10 menit
+    SetTimer("NeedsTick", 60000, true); // kebutuhan (makan/minum/stress) tiap 1 menit
     print("[SocietyRP] Gamemode dimuat: Society RP v1.0");
     return 1;
 }
@@ -325,6 +333,8 @@ public OnPlayerDisconnect(playerid, reason)
             "UPDATE accounts SET last_login = NOW() WHERE id = %d", Society_PlayerData[playerid][sPAccountID]);
         mysql_tquery(g_SQL, query);
     }
+    Needs_Hide(playerid);
+    Needs_DestroyTextDraws(playerid);
     ResetPlayerVars(playerid);
     return 1;
 }
@@ -344,6 +354,7 @@ public OnPlayerSpawn(playerid)
         format(msg, sizeof(msg), "Selamat datang di Society Roleplay, %s!", pCharName[playerid]);
         SendClientMessage(playerid, COLOR_GREEN, msg);
         SendClientMessage(playerid, COLOR_GREY, "Ketik /bantuan untuk melihat daftar perintah.");
+        Needs_Show(playerid); // tampilkan textdraw makan/minum/stress
     }
     return 1;
 }
@@ -599,9 +610,13 @@ public OnPlayerCommandText(playerid, cmdtext[])
         if (Society_PlayerData[playerid][sPAdmin] > 0) format(admin, sizeof(admin), "Ya (%d)", Society_PlayerData[playerid][sPAdmin]);
         else format(admin, sizeof(admin), "Tidak");
         format(info, sizeof(info),
-            "Nama: %s\nUmur: %d tahun\nJenis Kelamin: %s\nLevel: %d\nEXP: %d\nUang: %s\nTabungan Bank: %s\nAdmin: %s",
+            "Nama: %s\nUmur: %d tahun\nJenis Kelamin: %s\nLevel: %d\nEXP: %d\nUang: %s\nTabungan Bank: %s\nMakan: %d\nMinum: %d\nStress: %d\nAdmin: %s",
             pCharName[playerid], pAge[playerid], gender,
-            pLevel[playerid], pExp[playerid], uang, bank, admin);
+            pLevel[playerid], pExp[playerid], uang, bank,
+            floatround(Society_PlayerData[playerid][sPHunger], floatround_round),
+            floatround(Society_PlayerData[playerid][sPThirst], floatround_round),
+            floatround(Society_PlayerData[playerid][sPStress], floatround_round),
+            admin);
         Dialog_Show(playerid, Stats, DIALOG_STYLE_MSGBOX, "Statistik Karakter", info, "Tutup", "");
         return 1;
     }
@@ -635,11 +650,35 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
+    // /makan - mengisi kebutuhan makan (+35)
+    if (strcmp(cmd, "/makan", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        Needs_Eat(playerid);
+        return 1;
+    }
+
+    // /minum - mengisi kebutuhan minum (+35)
+    if (strcmp(cmd, "/minum", true) == 0)
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
+        {
+            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
+            return 1;
+        }
+        Needs_Drink(playerid);
+        return 1;
+    }
+
     // /bantuan - daftar perintah
     if (strcmp(cmd, "/bantuan", true) == 0)
     {
         Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan",
-            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/uang - Melihat jumlah uang\n/save - Menyimpan data karakter\n/bantuan - Membuka menu ini\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
+            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/uang - Melihat jumlah uang\n/makan - Makan untuk mengisi kebutuhan makan\n/minum - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/bantuan - Membuka menu ini\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
             "Tutup", "");
         return 1;
     }
@@ -926,6 +965,9 @@ public OnCharLoaded(playerid)
     cache_get_value_name_int(0, "vw", tmp);        pVW[playerid] = tmp;
     cache_get_value_name_float(0, "health", ftmp); pHealth[playerid] = ftmp;
     cache_get_value_name_float(0, "armour", ftmp); pArmour[playerid] = ftmp;
+    cache_get_value_name_float(0, "hunger", ftmp); Society_PlayerData[playerid][sPHunger] = ftmp;
+    cache_get_value_name_float(0, "thirst", ftmp); Society_PlayerData[playerid][sPThirst] = ftmp;
+    cache_get_value_name_float(0, "stress", ftmp); Society_PlayerData[playerid][sPStress] = ftmp;
     SpawnCharacter(playerid);
     return 1;
 }
