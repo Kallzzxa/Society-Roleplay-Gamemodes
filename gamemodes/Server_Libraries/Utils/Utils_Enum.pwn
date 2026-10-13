@@ -26,7 +26,7 @@ enum Society_Player
     Float:sPHunger,     // 0-100, berkurang tiap menit
     Float:sPThirst,     // 0-100, berkurang tiap menit
     Float:sPStress,     // 0-100, naik jika lapar/haus
-    sPNeedsCD           // cooldown /makan & /minum (GetTickCount)
+    sPNeedsCD           // cooldown /eat & /drink (GetTickCount)
 };
 new Society_PlayerData[MAX_PLAYERS][Society_Player];
 // Catatan: Pawn tidak mendukung array 2 dimensi di dalam enum,

@@ -112,7 +112,7 @@ stock Needs_Hide(playerid)
     return 1;
 }
 
-// Needs_Eat: /makan — menambah kenyang, mengurangi sedikit stress
+// Needs_Eat: /eat — menambah kenyang, mengurangi sedikit stress
 stock Needs_Eat(playerid)
 {
     if (Society_PlayerData[playerid][sPHunger] >= 100.0)
@@ -136,7 +136,7 @@ stock Needs_Eat(playerid)
     return 1;
 }
 
-// Needs_Drink: /minum — menghilangkan haus, mengurangi sedikit stress
+// Needs_Drink: /drink — menghilangkan haus, mengurangi sedikit stress
 stock Needs_Drink(playerid)
 {
     if (Society_PlayerData[playerid][sPThirst] >= 100.0)
@@ -186,19 +186,19 @@ public NeedsTick()
         {
             GetPlayerHealth(i, hp);
             SetPlayerHealth(i, hp - 3.0);
-            SendClientMessage(i, COLOR_RED, "Kamu kelaparan! Segera makan! (/makan)");
+            SendClientMessage(i, COLOR_RED, "Kamu kelaparan! Segera makan! (/eat)");
         }
         if (Society_PlayerData[i][sPThirst] <= 0.0)
         {
             GetPlayerHealth(i, hp);
             SetPlayerHealth(i, hp - 3.0);
-            SendClientMessage(i, COLOR_RED, "Kamu kehausan! Segera minum! (/minum)");
+            SendClientMessage(i, COLOR_RED, "Kamu kehausan! Segera minum! (/drink)");
         }
         if (Society_PlayerData[i][sPStress] >= 100.0)
         {
             GetPlayerHealth(i, hp);
             SetPlayerHealth(i, hp - 2.0);
-            SendClientMessage(i, COLOR_RED, "Stress kamu mencapai batas! Cari makan/minum untuk menurunkannya.");
+            SendClientMessage(i, COLOR_RED, "Stress kamu mencapai batas! Cari makan/drink untuk menurunkannya.");
         }
         Needs_UpdateTextDraws(i);
     }

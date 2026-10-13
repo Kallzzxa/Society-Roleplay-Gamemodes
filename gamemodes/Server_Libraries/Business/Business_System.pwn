@@ -55,7 +55,7 @@ new bPickup[MAX_BUSINESS];          // id pickup
 new Text3D:bLabel[MAX_BUSINESS];    // label 3D
 new bool:bLabelOn[MAX_BUSINESS];    // true jika label sedang tampil
 
-// Data sementara: pembuatan bisnis oleh admin & menu /binfo pemain.
+// Data sementara: pembuatan bisnis oleh admin & menu /bizinfo pemain.
 new pBizName[MAX_PLAYERS][32];
 new pBizType[MAX_PLAYERS];
 new pBizPrice[MAX_PLAYERS];
@@ -190,7 +190,7 @@ stock Business_Create(playerid, const name[], type, price)
     return 1;
 }
 
-// Business_Buy: /belibisnis - pemain membeli bisnis yang belum ada pemiliknya.
+// Business_Buy: /buybusiness - pemain membeli bisnis yang belum ada pemiliknya.
 stock Business_Buy(playerid, slot)
 {
     if (slot < 0 || slot >= MAX_BUSINESS || !bExists[slot]) return 0;
@@ -220,11 +220,11 @@ stock Business_Buy(playerid, slot)
     FormatRupiah(bPrice[slot], harga, sizeof(harga));
     format(msg, sizeof(msg), "Selamat! Kamu membeli bisnis \"%s\" seharga %s.", bName[slot], harga);
     SendClientMessage(playerid, COLOR_GREEN, msg);
-    SendClientMessage(playerid, COLOR_GREY, "Ketik /binfo di dekat bisnismu untuk mengelolanya.");
+    SendClientMessage(playerid, COLOR_GREY, "Ketik /bizinfo di dekat bisnismu untuk mengelolanya.");
     return 1;
 }
 
-// Business_Collect: /bambil - pemilik mengambil keuntungan yang terkumpul.
+// Business_Collect: /bizwithdraw - pemilik mengambil keuntungan yang terkumpul.
 stock Business_Collect(playerid, slot)
 {
     if (slot < 0 || slot >= MAX_BUSINESS || !bExists[slot]) return 0;
@@ -246,7 +246,7 @@ stock Business_Collect(playerid, slot)
     return 1;
 }
 
-// Business_Sell: /jualbisnis - pemilik menjual kembali (70% dari harga beli).
+// Business_Sell: /sellbusiness - pemilik menjual kembali (70% dari harga beli).
 stock Business_Sell(playerid, slot)
 {
     if (slot < 0 || slot >= MAX_BUSINESS || !bExists[slot]) return 0;
@@ -288,7 +288,7 @@ stock Business_ToggleLock(playerid, slot)
     return 1;
 }
 
-// Business_ShowInfo: /binfo - dialog kelola bisnis milik pemain.
+// Business_ShowInfo: /bizinfo - dialog kelola bisnis milik pemain.
 stock Business_ShowInfo(playerid)
 {
     new slot = Business_OwnedNear(playerid);
@@ -446,7 +446,7 @@ public BusinessPayday()
                 new rp[32], msg[192];
                 FormatRupiah(Business_TypeProfit[bType[i]], rp, sizeof(rp));
                 format(msg, sizeof(msg),
-                    "[BISNIS] \"%s\" menghasilkan keuntungan %s. Ambil dengan /bambil.",
+                    "[BISNIS] \"%s\" menghasilkan keuntungan %s. Ambil dengan /bizwithdraw.",
                     bName[i], rp);
                 SendClientMessage(p, COLOR_YELLOW, msg);
             }

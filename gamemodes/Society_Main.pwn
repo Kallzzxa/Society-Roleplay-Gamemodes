@@ -17,8 +17,8 @@
 //  - Dialog memakai easyDialog (tanpa ID dialog manual)
 //  - Autosave tiap 10 menit + perintah /save
 //  - Mata uang Rupiah dengan format Rp1.500.000
-//  - Bisnis dinamis: /buatbisnis (admin), /belibisnis, /binfo, /bambil, /jualbisnis
-//  - Perintah pemain: /stats, /uang, /save, /bantuan
+//  - Bisnis dinamis: /createbisnis (admin), /buybusiness, /bizinfo, /bizwithdraw, /sellbusiness
+//  - Perintah pemain: /stats, /money, /save, /help
 //  - Perintah admin: /setadmin (RCON), /kick, /ban
 //
 // Dikembangkan dengan Hermes Agent.
@@ -361,7 +361,7 @@ public OnPlayerSpawn(playerid)
         new msg[96];
         format(msg, sizeof(msg), "Selamat datang di Society Roleplay, %s!", pCharName[playerid]);
         SendClientMessage(playerid, COLOR_GREEN, msg);
-        SendClientMessage(playerid, COLOR_GREY, "Ketik /bantuan untuk melihat daftar perintah.");
+        SendClientMessage(playerid, COLOR_GREY, "Ketik /help untuk melihat daftar perintah.");
         Needs_Show(playerid); // tampilkan textdraw makan/minum/stress
     }
     return 1;
@@ -629,8 +629,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // /uang - melihat jumlah uang dalam format rupiah
-    if (strcmp(cmd, "/uang", true) == 0)
+    // /money - melihat jumlah uang dalam format rupiah
+    if (strcmp(cmd, "/money", true) == 0)
     {
         if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
         {
@@ -658,8 +658,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // /makan - mengisi kebutuhan makan (+35)
-    if (strcmp(cmd, "/makan", true) == 0)
+    // /eat - mengisi kebutuhan makan (+35)
+    if (strcmp(cmd, "/eat", true) == 0)
     {
         if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
         {
@@ -670,8 +670,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // /minum - mengisi kebutuhan minum (+35)
-    if (strcmp(cmd, "/minum", true) == 0)
+    // /drink - mengisi kebutuhan minum (+35)
+    if (strcmp(cmd, "/drink", true) == 0)
     {
         if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
         {
@@ -682,11 +682,11 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // /bantuan - daftar perintah
-    if (strcmp(cmd, "/bantuan", true) == 0)
+    // /help - daftar perintah
+    if (strcmp(cmd, "/help", true) == 0)
     {
         Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan",
-            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/uang - Melihat jumlah uang\n/makan - Makan untuk mengisi kebutuhan makan\n/minum - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/bantuan - Membuka menu ini\n\nBisnis:\n/belibisnis - Membeli bisnis di dekatmu\n/binfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bambil - Mengambil keuntungan bisnis\n/jualbisnis - Menjual kembali bisnismu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/buatbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
+            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
             "Tutup", "");
         return 1;
     }
@@ -807,8 +807,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // /buatbisnis [nama] [tipe] [harga] - admin level 3+: membuat bisnis dinamis
-    if (strcmp(cmd, "/buatbisnis", true) == 0)
+    // /createbisnis [nama] [tipe] [harga] - admin level 3+: membuat bisnis dinamis
+    if (strcmp(cmd, "/createbisnis", true) == 0)
     {
         if (!IsAdmin(playerid, 3))
         {
@@ -826,9 +826,9 @@ public OnPlayerCommandText(playerid, cmdtext[])
         sharga = strtok(cmdtext, idx);
         if (!strlen(snama) || !strlen(stipe) || !strlen(sharga))
         {
-            SendClientMessage(playerid, COLOR_GREY, "Gunakan: /buatbisnis [nama] [tipe] [harga]");
+            SendClientMessage(playerid, COLOR_GREY, "Gunakan: /createbisnis [nama] [tipe] [harga]");
             SendClientMessage(playerid, COLOR_GREY, "Tipe: 0=Warung Makan, 1=Toko Kelontong, 2=Restoran, 3=Bar, 4=Toko Pakaian, 5=Hotel");
-            SendClientMessage(playerid, COLOR_GREY, "Contoh: /buatbisnis Warung_Barokah 0 5000000 (spasi diganti _)");
+            SendClientMessage(playerid, COLOR_GREY, "Contoh: /createbisnis Warung_Barokah 0 5000000 (spasi diganti _)");
             return 1;
         }
         if (strlen(snama) < 3)
@@ -860,8 +860,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // /belibisnis - membeli bisnis yang belum ada pemiliknya (di dekat pickup)
-    if (strcmp(cmd, "/belibisnis", true) == 0)
+    // /buybusiness - membeli bisnis yang belum ada pemiliknya (di dekat pickup)
+    if (strcmp(cmd, "/buybusiness", true) == 0)
     {
         if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
         {
@@ -878,8 +878,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // /binfo - dialog kelola bisnis milik sendiri (di dekat bisnis)
-    if (strcmp(cmd, "/binfo", true) == 0)
+    // /bizinfo - dialog kelola bisnis milik sendiri (di dekat bisnis)
+    if (strcmp(cmd, "/bizinfo", true) == 0)
     {
         if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
         {
@@ -890,8 +890,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // /bambil - mengambil keuntungan bisnis milik sendiri
-    if (strcmp(cmd, "/bambil", true) == 0)
+    // /bizwithdraw - mengambil keuntungan bisnis milik sendiri
+    if (strcmp(cmd, "/bizwithdraw", true) == 0)
     {
         if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
         {
@@ -908,8 +908,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // /jualbisnis - menjual kembali bisnismu (70% dari harga beli)
-    if (strcmp(cmd, "/jualbisnis", true) == 0)
+    // /sellbusiness - menjual kembali bisnismu (70% dari harga beli)
+    if (strcmp(cmd, "/sellbusiness", true) == 0)
     {
         if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
         {
@@ -932,7 +932,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    SendClientMessage(playerid, COLOR_GREY, "Perintah tidak dikenal. Ketik /bantuan.");
+    SendClientMessage(playerid, COLOR_GREY, "Perintah tidak dikenal. Ketik /help.");
     return 1;
 }
 
