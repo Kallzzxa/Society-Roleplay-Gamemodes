@@ -111,14 +111,17 @@ compile 0 error, commit+push per item.
       (id, name, pos, fee) + kolom baru `player_vehicles.garage_id`
       (0 = di jalanan, >0 = id garasi tempat tersimpan).
       Admin: `/creategarage [nama] [biaya]` (level 3+) → pickup + label 3D
-      "[GARASI]" (nama + biaya titip + jumlah tersimpan).
-      Pemain di dekat garasi: `/garage` → dialog Simpan / Ambil / Info.
-      Simpan: kendaraan milik pemain yang aktif dalam 15 meter di-despawn
-      + tercatat di garasi, bayar biaya titip sekali; Ambil: spawn lagi di
-      depan garasi + pemain langsung masuk kursi sopir. `/garages`
-      (daftar semua garasi). Kapasitas 20 kendaraan per garasi.
-      Kendaraan tersimpan tidak ikut spawn saat karakter load
-      (dijaga di `Vehicle_Spawn`) dan tampil "Di Garasi" di /vlist.
+      gaya garkot Indonesia (referensi video YouTube 2026-10-14):
+      kuning `(GARKOT ID: x)`, putih nama + biaya/isi, `Tekan F` merah.
+      Pemain: `/garage` atau tekan ENTER (F) di dekat garasi → dialog
+      Simpan / Ambil / Transfer / Info. Simpan: kendaraan milik pemain
+      yang aktif dalam 15 meter di-despawn + tercatat di garasi, bayar
+      biaya titip sekali; Ambil: spawn lagi di depan garasi + pemain
+      langsung masuk kursi sopir; Transfer: pindahkan kendaraan tersimpan
+      ke garkot lain (biaya Rp100.000). `/garages` (daftar semua garasi).
+      Kapasitas 20 kendaraan per garasi. Kendaraan tersimpan tidak ikut
+      spawn saat karakter load (dijaga di `Vehicle_Spawn`) dan tampil
+      "Di Garasi" di /vlist.
       Modul: `Server_Libraries/Garage/Garage_System.pwn`.
 - [x] **Dynamic Family/Gangster** (selesai 2026-10-14): tabel `families`
       (id, name, color [RGB], leader_char_id, cash) + kolom baru

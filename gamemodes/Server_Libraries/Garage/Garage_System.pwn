@@ -28,6 +28,7 @@
 #define GARAGE_VEH_RANGE 15.0    // kendaraan harus sedekat ini dari garasi agar bisa dititipkan
 #define GARAGE_MAX_STORED 20     // maks kendaraan tersimpan per garasi
 #define GARAGE_MAX_FEE 500000   // biaya titip tertinggi saat /creategarage
+#define GARAGE_TRANSFER_FEE 100000 // biaya transfer kendaraan antar garkot
 
 //==== DATA GARASI ====
 new gExists[MAX_GARAGE];         // 1 jika slot terisi
@@ -47,6 +48,7 @@ new pGarageVehSlot[MAX_PLAYERS]; // slot kendaraan yang dipilih untuk dititipkan
 new pGarageName[MAX_PLAYERS][32]; // nama garasi yang sedang dibuat admin
 new pGarageFee[MAX_PLAYERS];     // biaya titip garasi yang sedang dibuat admin
 new pGarageNewSlot[MAX_PLAYERS]; // slot garasi baru yang menunggu callback INSERT
+new pGarageTarget[MAX_PLAYERS];  // slot garasi tujuan transfer kendaraan
 
 //==== FORWARD ====
 forward OnGaragesLoaded();
@@ -89,9 +91,9 @@ stock Garage_RefreshLabel(slot)
     }
     new text[256], biaya[32];
     FormatRupiah(gFee[slot], biaya, sizeof(biaya));
-    // Gaya label Infer: ID putih, info kuning, perintah cyan.
+    // Gaya label garkot Indonesia (referensi video): ID kuning, info putih, tombol F merah.
     format(text, sizeof(text),
-        "{FFFFFF}ID: %d\n{FFFF00}%s\nBiaya: %s | Isi: %d/%d\n{00CCFF}/garage",
+        "{FFFF00}(GARKOT ID: %d)\n{FFFFFF}%s\nBiaya: %s | Isi: %d/%d\nTekan {FF4444}F{FFFFFF} untuk buka garasi",
         gDBID[slot], gName[slot], biaya, Garage_StoredCount(slot), GARAGE_MAX_STORED);
     gLabel[slot] = Create3DTextLabel(text, 0xFFFFFFFF,
         gPosX[slot], gPosY[slot], gPosZ[slot] + 1.2, 20.0, 0, 1);
@@ -281,17 +283,63 @@ stock Garage_Retrieve(playerid, gslot, vslot)
     return 1;
 }
 
+// Garage_Transfer: pindahkan kendaraan yang tersimpan ke garasi kota lain (kena biaya).
+stock Garage_Transfer(playerid, gslot, vslot, targetslot)
+{
+    if (gslot < 0 || gslot >= MAX_GARAGE || !gExists[gslot]) return 0;
+    if (targetslot < 0 || targetslot >= MAX_GARAGE || !gExists[targetslot]) return 0;
+    if (targetslot == gslot) return 0;
+    if (vslot < 0 || vslot >= MAX_PVEH || !vExists[vslot]) return 0;
+    if (vOwnerCharID[vslot] != Society_PlayerData[playerid][sPCharID])
+    {
+        SendClientMessage(playerid, COLOR_RED, "Ini bukan kendaraanmu.");
+        return 0;
+    }
+    if (vGarageID[vslot] != gDBID[gslot])
+    {
+        SendClientMessage(playerid, COLOR_RED, "Kendaraan ini tidak tersimpan di garasi ini.");
+        return 0;
+    }
+    if (Garage_StoredCount(targetslot) >= GARAGE_MAX_STORED)
+    {
+        SendClientMessage(playerid, COLOR_RED, "Garasi tujuan sudah penuh.");
+        return 0;
+    }
+    if (GetPlayerMoney(playerid) < GARAGE_TRANSFER_FEE)
+    {
+        new kurang[32], msg[160];
+        FormatRupiah(GARAGE_TRANSFER_FEE, kurang, sizeof(kurang));
+        format(msg, sizeof(msg), "Uang tidak cukup. Biaya transfer %s.", kurang);
+        SendClientMessage(playerid, COLOR_RED, msg);
+        return 0;
+    }
+    GivePlayerMoney(playerid, -GARAGE_TRANSFER_FEE);
+    vGarageID[vslot] = gDBID[targetslot];
+    Vehicle_SaveSlot(vslot);
+    Garage_RefreshLabel(gslot);
+    Garage_RefreshLabel(targetslot);
+
+    new nama[32], biaya[32], msg[256];
+    Vehicle_CatName(vModel[vslot], nama, sizeof(nama));
+    FormatRupiah(GARAGE_TRANSFER_FEE, biaya, sizeof(biaya));
+    format(msg, sizeof(msg),
+        "Kendaraan %s (%s) ditransfer ke garasi \"%s\". Biaya transfer: %s.",
+        nama, vPlate[vslot], gName[targetslot], biaya);
+    SendClientMessage(playerid, COLOR_GREEN, msg);
+    return 1;
+}
+
 //================================================================
 // MENU GARASI
 //================================================================
 
-// Garage_ShowMain: menu utama /garage (simpan / ambil / info).
+// Garage_ShowMain: menu utama /garage (simpan / ambil / transfer / info).
 stock Garage_ShowMain(playerid, gslot)
 {
     if (gslot < 0 || gslot >= MAX_GARAGE || !gExists[gslot]) return 0;
     pGarageSlot[playerid] = gslot;
     Dialog_Show(playerid, GarageMain, DIALOG_STYLE_LIST, gName[gslot],
-        "Simpan Kendaraan\nAmbil Kendaraan\nInfo Garasi", "Pilih", "Tutup");
+        "Simpan Kendaraan\nAmbil Kendaraan\nTransfer Kendaraan\nInfo Garasi", "Pilih", "Tutup");
     return 1;
 }
 
@@ -356,6 +404,62 @@ stock Garage_ShowRetrieveList(playerid, gslot)
     return 1;
 }
 
+// Garage_ShowTransferList: daftar kendaraan tersimpan untuk ditransfer ke garkot lain.
+stock Garage_ShowTransferList(playerid, gslot)
+{
+    if (gslot < 0 || gslot >= MAX_GARAGE || !gExists[gslot]) return 0;
+    new charid = Society_PlayerData[playerid][sPCharID];
+    new list[1024], nama[32], baris[96];
+    list[0] = EOS;
+    new count = 0;
+    for (new i = 0; i < MAX_PVEH; i++)
+    {
+        if (!vExists[i] || vOwnerCharID[i] != charid) continue;
+        if (vGarageID[i] != gDBID[gslot]) continue;
+        Vehicle_CatName(vModel[i], nama, sizeof(nama));
+        format(baris, sizeof(baris), "%s (%s)", nama, vPlate[i]);
+        if (count > 0) strcat(list, "\n", sizeof(list));
+        strcat(list, baris, sizeof(list));
+        count++;
+    }
+    if (count == 0)
+    {
+        SendClientMessage(playerid, COLOR_RED, "Tidak ada kendaraanmu yang tersimpan di garasi ini.");
+        return 0;
+    }
+    Dialog_Show(playerid, GarageTransfer, DIALOG_STYLE_LIST, "Transfer Kendaraan", list, "Pilih", "Kembali");
+    return 1;
+}
+
+// Garage_ShowTransferTarget: daftar garasi kota lain sebagai tujuan transfer.
+stock Garage_ShowTransferTarget(playerid, gslot, vslot)
+{
+    if (gslot < 0 || gslot >= MAX_GARAGE || !gExists[gslot]) return 0;
+    if (vslot < 0 || vslot >= MAX_PVEH || !vExists[vslot]) return 0;
+    pGarageSlot[playerid] = gslot;
+    pGarageVehSlot[playerid] = vslot;
+    new list[1024], baris[128], biaya[32];
+    FormatRupiah(GARAGE_TRANSFER_FEE, biaya, sizeof(biaya));
+    list[0] = EOS;
+    new count = 0;
+    for (new i = 0; i < MAX_GARAGE; i++)
+    {
+        if (!gExists[i] || i == gslot) continue;
+        format(baris, sizeof(baris), "%s (ID %d) - Isi %d/%d - Biaya %s",
+            gName[i], gDBID[i], Garage_StoredCount(i), GARAGE_MAX_STORED, biaya);
+        if (count > 0) strcat(list, "\n", sizeof(list));
+        strcat(list, baris, sizeof(list));
+        count++;
+    }
+    if (count == 0)
+    {
+        SendClientMessage(playerid, COLOR_RED, "Tidak ada garasi kota lain.");
+        return 0;
+    }
+    Dialog_Show(playerid, GarageTransferTarget, DIALOG_STYLE_LIST, "Tujuan Transfer", list, "Pilih", "Kembali");
+    return 1;
+}
+
 // Garage_ShowList: daftar semua garasi di server (/garages).
 stock Garage_ShowList(playerid)
 {
@@ -400,6 +504,10 @@ Dialog:GarageMain(playerid, response, listitem, inputtext[])
         Garage_ShowRetrieveList(playerid, gslot);
     }
     else if (listitem == 2)
+    {
+        Garage_ShowTransferList(playerid, gslot);
+    }
+    else if (listitem == 3)
     {
         new biaya[32], msg[320];
         FormatRupiah(gFee[gslot], biaya, sizeof(biaya));
@@ -489,6 +597,81 @@ Dialog:GarageRetrieve(playerid, response, listitem, inputtext[])
     }
     if (vslot == -1) return 1;
     Garage_Retrieve(playerid, gslot, vslot);
+    return 1;
+}
+
+// Dialog:GarageTransfer - pilih kendaraan yang akan ditransfer ke garkot lain.
+Dialog:GarageTransfer(playerid, response, listitem, inputtext[])
+{
+    new gslot = pGarageSlot[playerid];
+    if (!response)
+    {
+        Garage_ShowMain(playerid, gslot);
+        return 1;
+    }
+    if (gslot < 0 || gslot >= MAX_GARAGE || !gExists[gslot]) return 1;
+    new charid = Society_PlayerData[playerid][sPCharID];
+    new count = 0, vslot = -1;
+    for (new i = 0; i < MAX_PVEH; i++)
+    {
+        if (!vExists[i] || vOwnerCharID[i] != charid) continue;
+        if (vGarageID[i] != gDBID[gslot]) continue;
+        if (count == listitem)
+        {
+            vslot = i;
+            break;
+        }
+        count++;
+    }
+    if (vslot == -1) return 1;
+    Garage_ShowTransferTarget(playerid, gslot, vslot);
+    return 1;
+}
+
+// Dialog:GarageTransferTarget - pilih garasi kota tujuan transfer.
+Dialog:GarageTransferTarget(playerid, response, listitem, inputtext[])
+{
+    new gslot = pGarageSlot[playerid];
+    new vslot = pGarageVehSlot[playerid];
+    if (!response)
+    {
+        Garage_ShowTransferList(playerid, gslot);
+        return 1;
+    }
+    if (gslot < 0 || gslot >= MAX_GARAGE || !gExists[gslot]) return 1;
+    if (vslot < 0 || vslot >= MAX_PVEH || !vExists[vslot]) return 1;
+    new count = 0, target = -1;
+    for (new i = 0; i < MAX_GARAGE; i++)
+    {
+        if (!gExists[i] || i == gslot) continue;
+        if (count == listitem)
+        {
+            target = i;
+            break;
+        }
+        count++;
+    }
+    if (target == -1) return 1;
+    pGarageTarget[playerid] = target;
+    new nama[32], biaya[32], msg[256];
+    Vehicle_CatName(vModel[vslot], nama, sizeof(nama));
+    FormatRupiah(GARAGE_TRANSFER_FEE, biaya, sizeof(biaya));
+    format(msg, sizeof(msg),
+        "Transfer kendaraan ini?\n\n%s (%s)\nDari: %s\nKe: %s\nBiaya transfer: %s",
+        nama, vPlate[vslot], gName[gslot], gName[target], biaya);
+    Dialog_Show(playerid, GarageTransferConfirm, DIALOG_STYLE_MSGBOX, "Konfirmasi Transfer", msg, "Transfer", "Batal");
+    return 1;
+}
+
+// Dialog:GarageTransferConfirm - konfirmasi sebelum biaya transfer dipotong.
+Dialog:GarageTransferConfirm(playerid, response, listitem, inputtext[])
+{
+    if (!response)
+    {
+        Garage_ShowTransferTarget(playerid, pGarageSlot[playerid], pGarageVehSlot[playerid]);
+        return 1;
+    }
+    Garage_Transfer(playerid, pGarageSlot[playerid], pGarageVehSlot[playerid], pGarageTarget[playerid]);
     return 1;
 }
 
