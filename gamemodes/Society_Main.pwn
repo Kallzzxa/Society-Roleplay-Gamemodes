@@ -1302,12 +1302,14 @@ public OnPlayerCommandText(playerid, cmdtext[])
             return 1;
         }
         pBizMenuSlot[playerid] = slot;
-        new harga[32], msg[256];
+        new harga[32], msg[256], opts[2][64];
         FormatRupiah((bPrice[slot] * BUSINESS_SELL_RATE) / 100, harga, sizeof(harga));
         format(msg, sizeof(msg),
-            "Yakin ingin menjual bisnis \"%s\"?\n\nKamu akan menerima %s (%d%% dari harga beli).",
+            "Yakin ingin menjual bisnis \"%s\"?~n~~n~Kamu akan menerima %s (%d%% dari harga beli).",
             bName[slot], harga, BUSINESS_SELL_RATE);
-        Dialog_Show(playerid, BizSellConfirm, DIALOG_STYLE_MSGBOX, "Jual Bisnis", msg, "Jual", "Batal");
+        format(opts[0], 64, "Jual");
+        format(opts[1], 64, "Batal");
+        UI_ShowMenu(playerid, "dialog_BizSellConfirm", "JUAL BISNIS", msg, opts, 2);
         return 1;
     }
 
@@ -1441,12 +1443,14 @@ public OnPlayerCommandText(playerid, cmdtext[])
             return 1;
         }
         pHouseMenuSlot[playerid] = slot;
-        new harga[32], msg[256];
+        new harga[32], msg[256], opts[2][64];
         FormatRupiah((hPrice[slot] * HOUSE_SELL_RATE) / 100, harga, sizeof(harga));
         format(msg, sizeof(msg),
-            "Yakin ingin menjual rumah #%d?\n\nKamu akan menerima %s (%d%% dari harga beli).",
+            "Yakin ingin menjual rumah #%d?~n~~n~Kamu akan menerima %s (%d%% dari harga beli).",
             hDBID[slot], harga, HOUSE_SELL_RATE);
-        Dialog_Show(playerid, HouseSellConfirm, DIALOG_STYLE_MSGBOX, "Jual Rumah", msg, "Jual", "Batal");
+        format(opts[0], 64, "Jual");
+        format(opts[1], 64, "Batal");
+        UI_ShowMenu(playerid, "dialog_HouseSellConfirm", "JUAL RUMAH", msg, opts, 2);
         return 1;
     }
 
@@ -1463,9 +1467,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
             SendClientMessage(playerid, COLOR_RED, "Kamu sudah punya 2 kendaraan (maksimal).");
             return 1;
         }
-        new list[1024];
-        Vehicle_BuildBuyList(list, sizeof(list));
-        Dialog_Show(playerid, VehBuy, DIALOG_STYLE_LIST, "Beli Kendaraan", list, "Pilih", "Tutup");
+        Vehicle_ShowBuyList(playerid);
         return 1;
     }
 

@@ -571,18 +571,11 @@ Dialog:WsModMenu(playerid, response, listitem, inputtext[])
     }
     else if (listitem == 1) // Pasang komponen
     {
-        new list[256];
-        format(list, sizeof(list), "%s\n%s\n%s\n%s\n%s\n%s\n%s",
-            WsCatName[0], WsCatName[1], WsCatName[2], WsCatName[3],
-            WsCatName[4], WsCatName[5], WsCatName[6]);
-        Dialog_Show(playerid, WsCompCat, DIALOG_STYLE_LIST, "Pilih Kategori Komponen", list, "Pilih", "Kembali");
+        Workshop_ShowCompCat(playerid);
     }
     else if (listitem == 2) // Pasang neon
     {
-        new biaya[32], list[128];
-        FormatRupiah(WORKSHOP_NEON_FEE, biaya, sizeof(biaya));
-        format(list, sizeof(list), "Neon Biru (%s)\nNeon Pink (%s)", biaya, biaya);
-        Dialog_Show(playerid, WsNeonMenu, DIALOG_STYLE_LIST, "Pilih Warna Neon", list, "Pasang", "Kembali");
+        Workshop_ShowNeonMenu(playerid);
     }
     else if (listitem == 3) // Lepas neon
     {
@@ -641,18 +634,7 @@ Dialog:WsCompCat(playerid, response, listitem, inputtext[])
         return 1;
     }
     if (listitem < 0 || listitem >= WS_COMP_CAT) return 1;
-    new list[1024], item[64], rp[32];
-    list[0] = EOS;
-    for (new i = 0; i < WsCatCount[listitem]; i++)
-    {
-        new idx = WsCatStart[listitem] + i;
-        FormatRupiah(WsCompPrice[idx], rp, sizeof(rp));
-        format(item, sizeof(item), "%s (%s)\n", WsCompName[idx], rp);
-        strcat(list, item);
-    }
-    pWsCompIdx[playerid] = listitem; // simpan kategori terpilih
-    Dialog_Show(playerid, WsCompList, DIALOG_STYLE_LIST,
-        WsCatName[listitem], list, "Pasang", "Kembali");
+    Workshop_ShowCompList(playerid, listitem);
     return 1;
 }
 
@@ -662,30 +644,28 @@ Dialog:WsCompList(playerid, response, listitem, inputtext[])
     if (!response)
     {
         // Kembali ke daftar kategori.
-        new list[256];
-        format(list, sizeof(list), "%s\n%s\n%s\n%s\n%s\n%s\n%s",
-            WsCatName[0], WsCatName[1], WsCatName[2], WsCatName[3],
-            WsCatName[4], WsCatName[5], WsCatName[6]);
-        Dialog_Show(playerid, WsCompCat, DIALOG_STYLE_LIST, "Pilih Kategori Komponen", list, "Pilih", "Kembali");
+        Workshop_ShowCompCat(playerid);
         return 1;
     }
     new cat = pWsCompIdx[playerid];
     if (cat < 0 || cat >= WS_COMP_CAT || listitem < 0 || listitem >= WsCatCount[cat]) return 1;
     new idx = WsCatStart[cat] + listitem;
     pWsCompIdx[playerid] = idx; // simpan indeks komponen terpilih
-    new rp[32], msg[256];
+    new rp[32], msg[256], opts[2][64];
     FormatRupiah(WsCompPrice[idx], rp, sizeof(rp));
     format(msg, sizeof(msg),
-        "Pasang \"%s\" di kendaraanmu?\n\nBiaya: %s\n\nKomponen langsung terpasang setelah pembayaran.",
+        "Pasang \"%s\" di kendaraanmu?~n~~n~Biaya: %s~n~~n~Komponen langsung terpasang setelah pembayaran.",
         WsCompName[idx], rp);
-    Dialog_Show(playerid, WsCompConfirm, DIALOG_STYLE_MSGBOX, "Konfirmasi Komponen", msg, "Pasang", "Batal");
+    format(opts[0], 64, "Pasang");
+    format(opts[1], 64, "Batal");
+    UI_ShowMenu(playerid, "dialog_WsCompConfirm", "KONFIRMASI KOMPONEN", msg, opts, 2);
     return 1;
 }
 
 // Dialog:WsCompConfirm - konfirmasi sebelum komponen dipasang.
 Dialog:WsCompConfirm(playerid, response, listitem, inputtext[])
 {
-    if (!response) return 1;
+    if (!response || listitem != 0) return 1; // "Batal" (opsi 1) atau ESC
     Workshop_ModComponent(playerid, pWsCompIdx[playerid]);
     return 1;
 }
@@ -703,19 +683,63 @@ Dialog:WsNeonMenu(playerid, response, listitem, inputtext[])
     return 1;
 }
 
+// Workshop_ShowCompCat: menu modern pilih kategori komponen.
+stock Workshop_ShowCompCat(playerid)
+{
+    new opts[WS_COMP_CAT][64];
+    for (new i = 0; i < WS_COMP_CAT; i++)
+    {
+        format(opts[i], 64, "%s", WsCatName[i]);
+    }
+    UI_ShowMenu(playerid, "dialog_WsCompCat", "KATEGORI KOMPONEN",
+        "Pilih kategori komponen:", opts, WS_COMP_CAT);
+    return 1;
+}
+
+// Workshop_ShowCompList: menu modern daftar komponen dalam satu kategori.
+stock Workshop_ShowCompList(playerid, cat)
+{
+    if (cat < 0 || cat >= WS_COMP_CAT) return 0;
+    new opts[32][64], rp[32], count = 0;
+    for (new i = 0; i < WsCatCount[cat] && count < 32; i++)
+    {
+        new idx = WsCatStart[cat] + i;
+        FormatRupiah(WsCompPrice[idx], rp, sizeof(rp));
+        format(opts[count], 64, "%s (%s)", WsCompName[idx], rp);
+        count++;
+    }
+    pWsCompIdx[playerid] = cat; // simpan kategori terpilih
+    UI_ShowMenu(playerid, "dialog_WsCompList", WsCatName[cat],
+        "Pilih komponen yang akan dipasang:", opts, count);
+    return 1;
+}
+
+// Workshop_ShowNeonMenu: menu modern pilih warna neon.
+stock Workshop_ShowNeonMenu(playerid)
+{
+    new biaya[32], opts[2][64];
+    FormatRupiah(WORKSHOP_NEON_FEE, biaya, sizeof(biaya));
+    format(opts[0], 64, "Neon Biru (%s)", biaya);
+    format(opts[1], 64, "Neon Pink (%s)", biaya);
+    UI_ShowMenu(playerid, "dialog_WsNeonMenu", "WARNA NEON",
+        "Pilih warna neon underglow:", opts, 2);
+    return 1;
+}
+
 // Workshop_ShowModMenu: menampilkan menu utama /mod (dipakai ulang saat kembali).
 stock Workshop_ShowModMenu(playerid)
 {
     new slot = Workshop_CheckService(playerid);
     if (slot == -1) return 0;
-    new warna[32], neon[32], list[256];
+    new warna[32], neon[32], opts[4][64];
     FormatRupiah(WORKSHOP_COLOR_FEE, warna, sizeof(warna));
     FormatRupiah(WORKSHOP_NEON_FEE, neon, sizeof(neon));
-    format(list, sizeof(list),
-        "Ganti Warna Kendaraan (%s)\nPasang Komponen\nPasang Neon (%s)\nLepas Neon (gratis)",
-        warna, neon);
-    Dialog_Show(playerid, WsModMenu, DIALOG_STYLE_LIST,
-        "Bengkel: Modifikasi", list, "Pilih", "Tutup");
+    format(opts[0], 64, "Ganti Warna Kendaraan (%s)", warna);
+    format(opts[1], 64, "Pasang Komponen");
+    format(opts[2], 64, "Pasang Neon (%s)", neon);
+    format(opts[3], 64, "Lepas Neon (gratis)");
+    UI_ShowMenu(playerid, "dialog_WsModMenu", "BENGKEL: MODIFIKASI",
+        "Pilih layanan modifikasi:", opts, 4);
     return 1;
 }
 

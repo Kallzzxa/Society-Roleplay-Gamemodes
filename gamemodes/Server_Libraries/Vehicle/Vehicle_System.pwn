@@ -358,6 +358,20 @@ stock Vehicle_OnEnterVehicle(playerid, vehicleid, ispassenger)
 // PEMBELIAN
 //================================================================
 
+// Vehicle_ShowBuyList: menu modern katalog /buyvehicle (dipakai ulang saat kembali dari konfirmasi).
+stock Vehicle_ShowBuyList(playerid)
+{
+    new opts[VEH_CAT_COUNT][64], harga[32];
+    for (new i = 0; i < VEH_CAT_COUNT; i++)
+    {
+        FormatRupiah(g_VehCatPrice[i], harga, sizeof(harga));
+        format(opts[i], 64, "%s - %s", g_VehCatName[i], harga);
+    }
+    UI_ShowMenu(playerid, "dialog_VehBuy", "BELI KENDARAAN",
+        "Pilih kendaraan yang ingin dibeli:", opts, VEH_CAT_COUNT);
+    return 1;
+}
+
 // Vehicle_BuildBuyList: menyusun daftar katalog untuk dialog /buyvehicle.
 stock Vehicle_BuildBuyList(dest[], len)
 {
@@ -549,19 +563,25 @@ Dialog:VehBuy(playerid, response, listitem, inputtext[])
     if (!response) return 1;
     if (listitem < 0 || listitem >= VEH_CAT_COUNT) return 1;
     pVehBuyCat[playerid] = listitem;
-    new harga[32], msg[256];
+    new harga[32], msg[256], opts[2][64];
     FormatRupiah(g_VehCatPrice[listitem], harga, sizeof(harga));
     format(msg, sizeof(msg),
-        "Kamu akan membeli:\n\n%s\nHarga: %s\n\nKendaraan akan muncul di depanmu.",
+        "Kamu akan membeli:~n~~n~%s~n~Harga: %s~n~~n~Kendaraan akan muncul di depanmu.",
         g_VehCatName[listitem], harga);
-    Dialog_Show(playerid, VehBuyConfirm, DIALOG_STYLE_MSGBOX, "Beli Kendaraan", msg, "Beli", "Batal");
+    format(opts[0], 64, "Beli");
+    format(opts[1], 64, "Batal");
+    UI_ShowMenu(playerid, "dialog_VehBuyConfirm", "BELI KENDARAAN", msg, opts, 2);
     return 1;
 }
 
 // Dialog:VehBuyConfirm - konfirmasi sebelum uang dipotong.
 Dialog:VehBuyConfirm(playerid, response, listitem, inputtext[])
 {
-    if (!response) return 1;
+    if (!response || listitem != 0) // "Batal" (opsi 1) atau ESC = kembali ke katalog
+    {
+        Vehicle_ShowBuyList(playerid);
+        return 1;
+    }
     Vehicle_Buy(playerid, pVehBuyCat[playerid]);
     return 1;
 }

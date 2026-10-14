@@ -439,15 +439,17 @@ stock GasStation_ShowRefuel(playerid, slot)
         return 0;
     }
     pGasSlot[playerid] = slot;
-    new harga[32], total[32], msg[384], namakend[32];
+    new harga[32], total[32], msg[384], namakend[32], opts[2][64];
     FormatRupiah(gsPricePerLiter[slot], harga, sizeof(harga));
     FormatRupiah(liters * gsPricePerLiter[slot], total, sizeof(total));
     Vehicle_CatName(vModel[vslot], namakend, sizeof(namakend));
     format(msg, sizeof(msg),
-        "Pom: %s\nHarga: %s/liter\n\nKendaraan: %s (%s)\nBensin saat ini: %d%%\nAkan diisi: %d liter\nTotal bayar: %s\n\nUang kurang atau stok menipis? Tangki diisi semampunya.",
+        "Pom: %s~n~Harga: %s/liter~n~~n~Kendaraan: %s (%s)~n~Bensin saat ini: %d%%~n~Akan diisi: %d liter~n~Total bayar: %s~n~~n~Uang kurang atau stok menipis? Tangki diisi semampunya.",
         gsName[slot], harga, namakend, vPlate[vslot],
         floatround(vFuel[vslot], floatround_round), liters, total);
-    Dialog_Show(playerid, GasRefuel, DIALOG_STYLE_MSGBOX, "Isi Bensin", msg, "Isi", "Batal");
+    format(opts[0], 64, "Isi");
+    format(opts[1], 64, "Batal");
+    UI_ShowMenu(playerid, "dialog_GasRefuel", "ISI BENSIN", msg, opts, 2);
     return 1;
 }
 
@@ -589,9 +591,10 @@ stock GasStation_ShowForSale(playerid, slot)
     FormatRupiah(gsPrice[slot], harga, sizeof(harga));
     FormatRupiah(gsPricePerLiter[slot], hargaliter, sizeof(hargaliter));
     format(msg, sizeof(msg),
-        "Pom bensin ini belum ada pemiliknya.\n\nNama: %s\nHarga Beli: %s\nHarga Bensin: %s/liter\nStok Awal: %d liter\n\nKetik /buygasstation untuk membeli pom ini.",
+        "Pom bensin ini belum ada pemiliknya.~n~~n~Nama: %s~n~Harga Beli: %s~n~Harga Bensin: %s/liter~n~Stok Awal: %d liter~n~~n~Ketik /buygasstation untuk membeli pom ini.",
         gsName[slot], harga, hargaliter, gsStock[slot]);
-    Dialog_Show(playerid, GasForSale, DIALOG_STYLE_MSGBOX, "Pom Dijual", msg, "Tutup", "");
+    new opts[1][64] = {"Tutup"};
+    UI_ShowMenu(playerid, "dialog_GasForSale", "POM DIJUAL", msg, opts, 1);
     return 1;
 }
 
@@ -626,7 +629,7 @@ stock GasStation_ShowList(playerid)
 // Dialog:GasRefuel - konfirmasi pengisian bensin.
 Dialog:GasRefuel(playerid, response, listitem, inputtext[])
 {
-    if (!response) return 1;
+    if (!response || listitem != 0) return 1; // "Batal" (opsi 1) atau ESC
     GasStation_Refuel(playerid, pGasSlot[playerid]);
     return 1;
 }

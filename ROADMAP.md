@@ -45,10 +45,18 @@ bertahap. Framework: `Server_Libraries/UI/UI_Modern.pwn` — `UI_ShowMenu`
       GasSellConfirm) diperbaiki: klik "Batal" tidak lagi menjalankan aksi
       (`!response || listitem != 0`). Dialog INPUT/pembelian (Fase 3) dan
       undangan fraksi/keluarga tetap dialog.
-- [ ] **Fase 3**: migrasi dialog pembuatan/pembelian (input tetap dialog):
-      `/createbisnis`, `/createhouse`, `/createws`, `/creategarage`,
-      `/createzone`, `/createdealer`, `/creategasstation`, `/createfamily`,
-      `/buyvehicle`, konfirmasi beli (rumah/bisnis/dealer).
+- [x] **Fase 3** (selesai 2026-10-14): migrasi dialog pembuatan/pembelian
+      (input teks tetap dialog): katalog + konfirmasi `/buyvehicle`
+      (VehBuy/VehBuyConfirm, batal kembali ke katalog), konfirmasi beli
+      bisnis/rumah (BizBuyConfirm/HouseBuyConfirm), konfirmasi beli
+      kendaraan di dealer (DealerBuyConfirm, batal kembali ke showroom),
+      info dealer/pom dijual (DealerForSale/GasForSale), konfirmasi isi
+      bensin (GasRefuel), konfirmasi jual bisnis/rumah/dealer
+      (BizSellConfirm/HouseSellConfirm/DealerSellConfirm), pilih warna
+      keluarga (FamilyColor, alur /createfamily), seluruh menu `/mod`
+      bengkel (WsModMenu/kategori/komponen/neon/konfirmasi, helper
+      Workshop_ShowCompCat/ShowCompList/ShowNeonMenu/ShowModMenu).
+      Semua konfirmasi 2-tombol: klik "Batal"/ESC tidak menjalankan aksi.
 - [ ] **Fase 4**: sentuhan akhir — progress bar modern (ala NoPixel taskbar)
       untuk aksi berdurasi (refuel, repair, mancing, nambang), ikon suara
       (voice) di HUD, rapikan sisa SendClientMessage penting jadi notifikasi.
