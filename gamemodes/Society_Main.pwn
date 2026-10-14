@@ -27,6 +27,7 @@
 //  - Garasi kota dinamis: /creategarage (admin), /garage (titip/ambil kendaraan), /garages
 //  - Keluarga/gangster dinamis: /createfamily (bayar), /faminvite, /famkick, /setfamrank, /fam, /famquit, /faminfo, /families, /famcolor (warna nama & kendaraan), /famdeposit, /famwithdraw, /famsetleader (admin)
 //  - Zona dinamis: /createzone (admin, tipe Greenzone/Zona Bahaya), /zones (daftar+detail), /deletezone (admin); greenzone membatalkan damage & tembakan (OnPlayerTakeDamage/OnPlayerWeaponShot), textdraw nama zona saat masuk area
+//  - Dealer dinamis: /createdealer (admin), /buydealer, /dealer (showroom: lihat stok, test drive 60 detik, beli jadi kendaraan pribadi), /dealerinfo, /dealerwithdraw (komisi 5% tiap penjualan), /selldealer, /dealers
 //  - Perintah pemain: /stats, /money, /save, /help
 //  - Perintah admin: /setadmin (RCON), /adminduty, /admins, /kick, /ban
 //
@@ -253,6 +254,10 @@ stock ResetPlayerVars(playerid)
 // Zona dinamis: greenzone (tanpa damage/tembakan) & zona bahaya.
 #include "Server_Libraries/Zone/Zone_System.pwn"
 
+// Dealer kendaraan dinamis (di-include setelah modul Vehicle,
+// karena memakai katalog kendaraan & Vehicle_Buy dari modul itu).
+#include "Server_Libraries/Dealer/Dealer_System.pwn"
+
 // SaveCharacter: menyimpan data karakter pemain ke database.
 stock SaveCharacter(playerid)
 {
@@ -340,6 +345,7 @@ public OnGameModeInit()
     Garage_LoadAll();   // muat garasi kota dinamis dari database
     Family_LoadAll();   // muat keluarga/gangster dinamis dari database
     Zone_LoadAll();     // muat zona dinamis dari database
+    Dealer_LoadAll();   // muat dealer kendaraan dinamis dari database
     print("[SocietyRP] Gamemode dimuat: Society RP v1.0");
     return 1;
 }
@@ -401,6 +407,7 @@ public OnPlayerDisconnect(playerid, reason)
     Faction_OnDisconnect(playerid); // reset status duty fraksi & undangan
     Family_OnDisconnect(playerid); // reset data sementara keluarga
     Zone_OnDisconnect(playerid); // hapus textdraw zona
+    Dealer_OnDisconnect(playerid); // hapus kendaraan test drive
     ResetPlayerVars(playerid);
     return 1;
 }
@@ -844,7 +851,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (strcmp(cmd, "/help", true) == 0)
     {
         Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan",
-            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu\n/enterhouse - Masuk ke rumah\n/exithouse - Keluar dari dalam rumah\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nFraksi:\n/finfo - Info fraksimu & daftar anggota\n/factions - Daftar semua fraksi di server\n/f [pesan] - Chat khusus anggota fraksi\n/duty - Mulai/selesai duty (seragam & senjata dinas, di markas)\n/finvite [id] - Undang pemain (Wakil Ketua+)\n/fkick [id] - Keluarkan anggota (Wakil Ketua+)\n/fquit - Keluar dari fraksi\n/setrank [id] [rank] - Atur rank anggota (Ketua)\n/fdeposit [jumlah] - Setor ke kas fraksi\n/fwithdraw [jumlah] - Ambil kas fraksi (Ketua)\n\nKeluarga:\n/createfamily [nama] - Dirikan keluarga/gangster (Rp50 juta tunai)\n/faminfo - Info keluargamu & daftar anggota\n/families - Daftar semua keluarga di server\n/fam [pesan] - Chat khusus anggota keluarga\n/famcolor - Ganti warna identitas keluarga (Ketua)\n/faminvite [id] - Undang pemain (Tangan Kanan+)\n/famkick [id] - Keluarkan anggota (Tangan Kanan+)\n/famquit - Keluar dari keluarga\n/setfamrank [id] [rank] - Atur rank anggota (Ketua)\n/famdeposit [jumlah] - Setor ke kas keluarga\n/famwithdraw [jumlah] - Ambil kas keluarga (Ketua)\n\nBengkel:\n/buyworkshop - Membeli bengkel di dekatmu\n/wsinfo - Mengelola bengkelmu (ambil untung, jual)\n/wswithdraw - Mengambil keuntungan bengkel\n/repair - Perbaiki kendaraanmu di bengkel\n/mod - Modifikasi kendaraan (warna, komponen, neon) di bengkel\n\nGarasi Kota:\n/garage - Titip / ambil kendaraan di garasi terdekat\n/garages - Daftar semua garasi kota\n\nZona:\n/zones - Daftar & detail zona dinamis\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/adminduty - Nyalakan/matikan mode duty (nama berwarna oranye)\n/admins - Melihat daftar admin online\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] - (Admin 3+) Buat rumah dinamis (2 langkah)\n/createfaction [tipe] [nama] - (Admin 3+) Buat fraksi dinamis di posisimu\n/fsetleader [id] - (Admin 4+) Tunjuk ketua fraksi\n/famsetleader [id] - (Admin 4+) Tunjuk ketua keluarga\n/createws [nama] [harga] - (Admin 3+) Buat bengkel dinamis di posisimu\n/creategarage [nama] [biaya] - (Admin 3+) Buat garasi kota di posisimu\n/createzone [nama] [tipe] - (Admin 3+) Buat zona 100x100m (0=Greenzone, 1=Zona Bahaya)\n/deletezone - (Admin 4+) Hapus zona tempatmu berdiri\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
+            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu\n/enterhouse - Masuk ke rumah\n/exithouse - Keluar dari dalam rumah\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nFraksi:\n/finfo - Info fraksimu & daftar anggota\n/factions - Daftar semua fraksi di server\n/f [pesan] - Chat khusus anggota fraksi\n/duty - Mulai/selesai duty (seragam & senjata dinas, di markas)\n/finvite [id] - Undang pemain (Wakil Ketua+)\n/fkick [id] - Keluarkan anggota (Wakil Ketua+)\n/fquit - Keluar dari fraksi\n/setrank [id] [rank] - Atur rank anggota (Ketua)\n/fdeposit [jumlah] - Setor ke kas fraksi\n/fwithdraw [jumlah] - Ambil kas fraksi (Ketua)\n\nKeluarga:\n/createfamily [nama] - Dirikan keluarga/gangster (Rp50 juta tunai)\n/faminfo - Info keluargamu & daftar anggota\n/families - Daftar semua keluarga di server\n/fam [pesan] - Chat khusus anggota keluarga\n/famcolor - Ganti warna identitas keluarga (Ketua)\n/faminvite [id] - Undang pemain (Tangan Kanan+)\n/famkick [id] - Keluarkan anggota (Tangan Kanan+)\n/famquit - Keluar dari keluarga\n/setfamrank [id] [rank] - Atur rank anggota (Ketua)\n/famdeposit [jumlah] - Setor ke kas keluarga\n/famwithdraw [jumlah] - Ambil kas keluarga (Ketua)\n\nBengkel:\n/buyworkshop - Membeli bengkel di dekatmu\n/wsinfo - Mengelola bengkelmu (ambil untung, jual)\n/wswithdraw - Mengambil keuntungan bengkel\n/repair - Perbaiki kendaraanmu di bengkel\n/mod - Modifikasi kendaraan (warna, komponen, neon) di bengkel\n\nGarasi Kota:\n/garage - Titip / ambil kendaraan di garasi terdekat\n/garages - Daftar semua garasi kota\n\nZona:\n/zones - Daftar & detail zona dinamis\n\nDealer Kendaraan:\n/dealer - Showroom dealer terdekat (lihat stok, test drive, beli kendaraan)\n/dealers - Daftar semua dealer di server\n/buydealer - Membeli dealer di dekatmu\n/dealerinfo - Mengelola dealermu (info, ambil komisi, jual)\n/dealerwithdraw - Mengambil komisi penjualan dealer\n/selldealer - Menjual kembali dealermu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/adminduty - Nyalakan/matikan mode duty (nama berwarna oranye)\n/admins - Melihat daftar admin online\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] - (Admin 3+) Buat rumah dinamis (2 langkah)\n/createfaction [tipe] [nama] - (Admin 3+) Buat fraksi dinamis di posisimu\n/fsetleader [id] - (Admin 4+) Tunjuk ketua fraksi\n/famsetleader [id] - (Admin 4+) Tunjuk ketua keluarga\n/createws [nama] [harga] - (Admin 3+) Buat bengkel dinamis di posisimu\n/creategarage [nama] [biaya] - (Admin 3+) Buat garasi kota di posisimu\n/createzone [nama] [tipe] - (Admin 3+) Buat zona 100x100m (0=Greenzone, 1=Zona Bahaya)\n/deletezone - (Admin 4+) Hapus zona tempatmu berdiri\n/createdealer [nama] [tipe] [harga] - (Admin 3+) Buat dealer kendaraan di posisimu (tipe 0=Umum, 1=Ekonomis, 2=Sport, 3=Motor)\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
             "Tutup", "");
         return 1;
     }
@@ -1985,6 +1992,55 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (strcmp(cmd, "/deletezone", true) == 0)
     {
         Zone_CmdDelete(playerid);
+        return 1;
+    }
+
+    // /createdealer [nama] [tipe] [harga] - admin 3+: membuat dealer kendaraan
+    if (strcmp(cmd, "/createdealer", true) == 0)
+    {
+        Dealer_CmdCreate(playerid, cmdtext, idx);
+        return 1;
+    }
+
+    // /buydealer - membeli dealer yang dijual (di dekat pickup dealer)
+    if (strcmp(cmd, "/buydealer", true) == 0)
+    {
+        Dealer_CmdBuy(playerid);
+        return 1;
+    }
+
+    // /dealer - showroom di dealer terdekat (lihat stok, test drive, beli)
+    if (strcmp(cmd, "/dealer", true) == 0)
+    {
+        Dealer_CmdShowroom(playerid);
+        return 1;
+    }
+
+    // /dealerinfo - dialog kelola dealer milikmu
+    if (strcmp(cmd, "/dealerinfo", true) == 0)
+    {
+        Dealer_CmdInfo(playerid);
+        return 1;
+    }
+
+    // /dealerwithdraw - mengambil komisi penjualan dealer milikmu
+    if (strcmp(cmd, "/dealerwithdraw", true) == 0)
+    {
+        Dealer_CmdWithdraw(playerid);
+        return 1;
+    }
+
+    // /selldealer - menjual kembali dealermu (70% dari harga beli)
+    if (strcmp(cmd, "/selldealer", true) == 0)
+    {
+        Dealer_CmdSell(playerid);
+        return 1;
+    }
+
+    // /dealers - daftar semua dealer di server
+    if (strcmp(cmd, "/dealers", true) == 0)
+    {
+        Dealer_CmdList(playerid);
         return 1;
     }
 

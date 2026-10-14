@@ -143,14 +143,22 @@ compile 0 error, commit+push per item.
       pesan selamat datang. Pemain: `/zones` (dialog daftar + detail;
       admin 4+ bisa hapus dari dialog), `/deletezone` (admin 4+, berdiri
       di dalam zona). Modul: `Server_Libraries/Zone/Zone_System.pwn`.
-- [ ] **Dynamic Dealer**: tabel `dealers` (id, name, pos, type
-      [kendaraan]). Showroom: `/dealer` → dialog daftar kendaraan + harga,
-      test drive (spawn sementara), beli langsung jadi private vehicle.
-      Label 3D gaya Infer (dari video referensi Zerowaste): `{FFFFFF}ID: X` /
+- [x] **Dynamic Dealer** (selesai 2026-10-14): tabel `dealers`
+      (id, name, owner_char_id, type, price, profit, pos_x/y/z).
+      Admin: `/createdealer [nama] [tipe] [harga]` (level 3+, tipe
+      0=Umum/1=Ekonomis/2=Sport/3=Motor) → pickup dolar emas (model 1274) +
+      label 3D gaya Infer (dari video referensi Zerowaste): `{FFFFFF}ID: X` /
       `{FFFF00}` nama dealer (atau `Location: ...` bila dijual) /
       `{FFFF00}` `Pemilik: ...` (atau `Harga: Rp...` bila dijual) /
       `{FFFF00}` `Tipe: ...` / `{00CCFF}` perintah (`/buydealer` bila dijual,
-      `/dealer` bila dimiliki). Pickup tanda dolar emas (model 1274).
+      `/dealer` bila dimiliki). Pemain: `/buydealer` (dekat pickup), `/dealer`
+      (showroom: dialog daftar stok + harga, test drive 60 detik spawn
+      sementara, beli langsung jadi private vehicle maks 2/karakter),
+      `/dealerinfo` (dialog kelola: ambil komisi, jual), `/dealerwithdraw`
+      (komisi 5% tiap penjualan masuk kas dealer + notif pemilik online),
+      `/selldealer` (kembali 70%), `/dealers` (daftar + detail). Kendaraan
+      test drive dihapus otomatis saat timer habis/disconnect. Modul:
+      `Server_Libraries/Dealer/Dealer_System.pwn`.
 - [ ] **Dynamic Pom**: tabel `gasstations` (id, owner_char_id, name, pos,
       price_per_liter, stock). `/buygasstation`, pemilik set harga `/setfuelprice`,
       pemain `/refuel` di pompa (butuh sistem bensin). Label 3D nama +

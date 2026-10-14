@@ -206,3 +206,23 @@ CREATE TABLE IF NOT EXISTS `zones` (
 
 -- Untuk database yang sudah ada (dibuat sebelum update zona dinamis), jalankan:
 -- (cukup import ulang blok CREATE TABLE `zones` di atas)
+
+-- Skema dealer dinamis (update 2026-10-14).
+-- type: 0=Umum, 1=Ekonomis, 2=Sport, 3=Motor.
+-- owner_char_id: id karakter pemilik (0 = dijual).
+-- profit: komisi penjualan kendaraan yang bisa diambil pemilik via /dealerwithdraw.
+CREATE TABLE IF NOT EXISTS `dealers` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(32) NOT NULL,
+    `owner_char_id` INT DEFAULT 0,
+    `type` TINYINT DEFAULT 0,
+    `price` INT DEFAULT 0,
+    `profit` INT DEFAULT 0,
+    `pos_x` FLOAT NOT NULL,
+    `pos_y` FLOAT NOT NULL,
+    `pos_z` FLOAT NOT NULL,
+    INDEX `idx_dealer_owner` (`owner_char_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update dealer dinamis), jalankan:
+-- (cukup import ulang blok CREATE TABLE `dealers` di atas)
