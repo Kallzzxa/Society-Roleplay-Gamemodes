@@ -165,10 +165,25 @@ compile 0 error, commit+push per item.
       `/selldealer` (kembali 70%), `/dealers` (daftar + detail). Kendaraan
       test drive dihapus otomatis saat timer habis/disconnect. Modul:
       `Server_Libraries/Dealer/Dealer_System.pwn`.
-- [ ] **Dynamic Pom**: tabel `gasstations` (id, owner_char_id, name, pos,
-      price_per_liter, stock). `/buygasstation`, pemilik set harga `/setfuelprice`,
-      pemain `/refuel` di pompa (butuh sistem bensin). Label 3D nama +
-      harga.
+- [x] **Dynamic Pom** (selesai 2026-10-14): tabel `gasstations`
+      (id, name, owner_char_id, price, price_per_liter, stock, profit,
+      pos_x/y/z). Admin: `/creategasstation [nama] [harga]` (level 3+)
+      → pickup + label 3D (`[POM BENSIN ID: x]`, nama, harga/liter, stok,
+      status). Pemain: `/buygasstation` (dekat pompa, pom yang dijual),
+      `/refuel` (wajib jadi sopir kendaraan pribadi di dekat pompa →
+      dialog konfirmasi → isi penuh atau semampunya uang/stok), `/gasinfo`
+      (dialog kelola pemilik: info, beli stok dari pemasok Rp8.000/liter
+      maks 20.000L, ambil keuntungan, jual kembali 70%), `/setfuelprice`
+      (pemilik atur harga Rp1.000–50.000/liter, label diperbarui),
+      `/gaswithdraw`, `/sellgasstation`, `/gasstations` (daftar + detail).
+      **Sistem Bensin** ikut jalan: bensin kendaraan pribadi (0–100)
+      berkurang tiap 30 detik saat dikendarai (cepat saat melaju, pelan
+      saat diam) via timer `FuelTick`; bensin habis → pengemudi
+      dikeluarkan + tidak bisa masuk lagi sampai diisi; indikator bensin
+      di textdraw info kendaraan diperbarui otomatis. Jumlah pom tampil
+      di /stats > Aset. /help dipisah: perintah admin pindah ke
+      `/helpadmin` (baris string /help melebihi batas Pawn). Modul:
+      `Server_Libraries/GasStation/GasStation_System.pwn`.
 - [ ] **Dynamic Door**: tabel `doors` (id, owner_type [house/business/
       faction], owner_id, name, ext pos, int pos+interior, locked).
       Admin/pemilik `/createdoor` → pintu masuk/keluar interior apa pun

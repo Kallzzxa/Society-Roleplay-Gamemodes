@@ -231,6 +231,27 @@ CREATE TABLE IF NOT EXISTS `dealers` (
 -- Untuk database yang sudah ada (dibuat sebelum update dealer dinamis), jalankan:
 -- (cukup import ulang blok CREATE TABLE `dealers` di atas)
 
+-- Skema pom bensin dinamis (update 2026-10-14).
+-- gasstations: stasiun pengisian bensin yang bisa dibeli pemain
+-- (price = harga jual pom, price_per_liter = harga bensin per liter,
+-- stock = stok bensin di tangki pom dalam liter, profit = keuntungan penjualan).
+CREATE TABLE IF NOT EXISTS `gasstations` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(32) NOT NULL,
+    `owner_char_id` INT DEFAULT 0,
+    `price` INT DEFAULT 0,
+    `price_per_liter` INT DEFAULT 15000,
+    `stock` INT DEFAULT 5000,
+    `profit` INT DEFAULT 0,
+    `pos_x` FLOAT NOT NULL,
+    `pos_y` FLOAT NOT NULL,
+    `pos_z` FLOAT NOT NULL,
+    INDEX `idx_gas_owner` (`owner_char_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update pom bensin dinamis), jalankan:
+-- (cukup import ulang blok CREATE TABLE `gasstations` di atas)
+
 -- Skema inventory & starterpack (update 2026-10-14).
 -- inventory: isi tas tiap karakter (item_id 0=Roti, 1=Air Mineral, 2=Coconut Water, 3=Kopi, 4=Obat).
 -- starterpack_claims: catatan klaim paket warga baru (sekali per karakter).
