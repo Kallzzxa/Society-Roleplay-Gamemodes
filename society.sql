@@ -188,3 +188,21 @@ CREATE TABLE IF NOT EXISTS `families` (
 
 -- Untuk database yang sudah ada (dibuat sebelum update keluarga dinamis), jalankan:
 -- (cukup import ulang blok CREATE TABLE `families` di atas)
+
+-- Skema zona dinamis (update 2026-10-14).
+-- type: 0 = Greenzone (damage & tembakan dinonaktifkan di dalam area),
+--       1 = Zona Bahaya (penanda area berbahaya, damage tetap jalan).
+-- Area berbentuk persegi dari (min_x, min_y) ke (max_x, max_y).
+CREATE TABLE IF NOT EXISTS `zones` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(32) NOT NULL,
+    `type` INT DEFAULT 0,
+    `min_x` FLOAT NOT NULL,
+    `min_y` FLOAT NOT NULL,
+    `max_x` FLOAT NOT NULL,
+    `max_y` FLOAT NOT NULL,
+    INDEX `idx_zone_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update zona dinamis), jalankan:
+-- (cukup import ulang blok CREATE TABLE `zones` di atas)

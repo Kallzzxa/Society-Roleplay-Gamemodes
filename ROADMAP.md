@@ -131,11 +131,18 @@ compile 0 error, commit+push per item.
       `/famsetleader [id]`. Warna nama via SetPlayerColor (admin on-duty
       tetap oranye, dikembalikan saat duty off). Basis badside untuk
       turf/gang war nanti. Modul: `Server_Libraries/Family/Family_System.pwn`.
-- [ ] **Dynamic Zone (Greenzone)**: tabel `zones` (id, name, min_x/min_y/
-      max_x/max_y, type). Admin `/createzone [nama] [tipe]` → area persegi.
-      Greenzone: damage & tembak dinonaktifkan di dalam area (cek
-      OnPlayerTakeDamage/OnPlayerWeaponShot). Textdraw "GREEMZONE" saat
-      masuk area.
+- [x] **Dynamic Zone (Greenzone)** (selesai 2026-10-14): tabel `zones`
+      (id, name, type, min_x/min_y/max_x/max_y). Admin: `/createzone [nama] [tipe]`
+      (level 3+, tipe 0=Greenzone / 1=Zona Bahaya) → area persegi 100x100m
+      di posisi admin, gangzone berwarna + label 3D.
+      Greenzone: damage dibatalkan (nyawa dikembalikan di
+      `OnPlayerTakeDamage`, berlaku bila korban ATAU penyerang di dalam)
+      & tembakan dibatalkan (`OnPlayerWeaponShot` return 0, peringatan
+      dibatasi 1x/3 detik). Textdraw "GREENZONE"/"ZONA BAHAYA" di layar
+      saat masuk area (dicek tiap 1 detik via timer `ZoneTick`), plus
+      pesan selamat datang. Pemain: `/zones` (dialog daftar + detail;
+      admin 4+ bisa hapus dari dialog), `/deletezone` (admin 4+, berdiri
+      di dalam zona). Modul: `Server_Libraries/Zone/Zone_System.pwn`.
 - [ ] **Dynamic Dealer**: tabel `dealers` (id, name, pos, type
       [kendaraan]). Showroom: `/dealer` → dialog daftar kendaraan + harga,
       test drive (spawn sementara), beli langsung jadi private vehicle.
