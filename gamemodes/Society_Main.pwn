@@ -43,6 +43,7 @@
 #include <easyDialog>
 #include "Server_Libraries/Utils/Utils_Color.pwn"
 #include "Server_Libraries/Utils/Utils_Enum.pwn"
+#include "Server_Libraries/UI/UI_Modern.pwn"
 #include "Server_Libraries/Mysql/Mysql_Connect.inc"
 #include "Server_Libraries/Needs/Needs_System.pwn"
 #include "Server_Libraries/Inventory/Inventory_System.pwn"
@@ -344,6 +345,7 @@ public OnGameModeInit()
     UI_Init(); // daftarkan callback event CEF (dialog/inventory)
     SetTimer("AutoSave", 600000, true); // autosave tiap 10 menit
     SetTimer("NeedsTick", 60000, true); // kebutuhan (makan/minum/stress) tiap 1 menit
+    SetTimer("UITick", 1000, true); // notifikasi modern: sembunyikan yang kedaluwarsa
     SetTimer("BusinessPayday", 3600000, true); // profit bisnis tiap 1 jam
     SetTimer("ZoneTick", 1000, true);       // cek zona tempat pemain (textdraw)
     SetTimer("FuelTick", 30000, true);     // bensin kendaraan berkurang tiap 30 detik
@@ -422,6 +424,7 @@ public OnPlayerDisconnect(playerid, reason)
     Family_OnDisconnect(playerid); // reset data sementara keluarga
     Zone_OnDisconnect(playerid); // hapus textdraw zona
     Dealer_OnDisconnect(playerid); // hapus kendaraan test drive
+    UI_OnDisconnect(playerid); // bersih-bersih UI modern (menu & notifikasi)
     ResetPlayerVars(playerid);
     return 1;
 }
@@ -817,9 +820,106 @@ Dialog:StatsSub(playerid, response, listitem, inputtext[])
     return 1;
 }
 
-// Dialog:Help - dialog info, abaikan respon.
+// Dialog:Help - dialog info lama, tidak dipakai lagi (diganti menu modern).
 Dialog:Help(playerid, response, listitem, inputtext[])
 {
+    return 1;
+}
+
+// Help_ShowMenu: menu kategori bantuan (UI modern).
+stock Help_ShowMenu(playerid)
+{
+    new cats[11][64] =
+    {
+        "Perintah Pemain", "Bisnis", "Rumah", "Kendaraan", "Fraksi",
+        "Keluarga", "Bengkel", "Garasi Kota", "Zona", "Dealer", "Pom Bensin"
+    };
+    UI_ShowMenu(playerid, "dialog_HelpMenu", "BANTUAN",
+        "Pilih kategori perintah:~n~/helpadmin = perintah admin", cats, sizeof(cats));
+    return 1;
+}
+
+// Help_ShowCategory: panel isi perintah per kategori + tombol kembali.
+stock Help_ShowCategory(playerid, cat)
+{
+    new title[32], body[768];
+    switch (cat)
+    {
+        case 0:
+        {
+            format(title, sizeof(title), "PERINTAH PEMAIN");
+            format(body, sizeof(body), "/stats - Statistik karakter~n~/money - Jumlah uang~n~/eat - Makan (isi kebutuhan)~n~/drink - Minum (isi kebutuhan)~n~/inv - Tas inventory~n~/starterpack - Klaim paket warga baru~n~/save - Simpan data karakter");
+        }
+        case 1:
+        {
+            format(title, sizeof(title), "BISNIS");
+            format(body, sizeof(body), "/buybusiness - Beli bisnis di dekatmu~n~/bizinfo - Kelola bisnismu~n~/bizwithdraw - Ambil keuntungan~n~/sellbusiness - Jual bisnismu~n~Tekan ENTER (F) di dekat bisnis~n~untuk beli / kelola / lihat info");
+        }
+        case 2:
+        {
+            format(title, sizeof(title), "RUMAH");
+            format(body, sizeof(body), "/buyhouse - Beli rumah di dekatmu~n~/houseinfo - Kelola rumahmu~n~/lockhouse - Kunci / buka rumah~n~/sellhouse - Jual rumahmu~n~Tekan ENTER (F) di depan pintu~n~untuk beli / masuk / keluar");
+        }
+        case 3:
+        {
+            format(title, sizeof(title), "KENDARAAN");
+            format(body, sizeof(body), "/buyvehicle - Beli kendaraan pribadi~n~/vlist - Lihat & kelola kendaraan~n~/vpark - Simpan posisi parkir~n~/vlock - Kunci / buka kendaraan");
+        }
+        case 4:
+        {
+            format(title, sizeof(title), "FRAKSI");
+            format(body, sizeof(body), "/finfo - Info fraksi & anggota~n~/factions - Daftar semua fraksi~n~/f [pesan] - Chat fraksi~n~/duty - Duty di markas~n~/finvite / /fkick / /fquit~n~/setrank / /fdeposit / /fwithdraw");
+        }
+        case 5:
+        {
+            format(title, sizeof(title), "KELUARGA");
+            format(body, sizeof(body), "/createfamily [nama] - Dirikan keluarga (Rp50jt)~n~/faminfo - Info keluarga & anggota~n~/families - Daftar semua keluarga~n~/fam [pesan] - Chat keluarga~n~/faminvite / /famkick / /famquit~n~/setfamrank / /famdeposit / /famwithdraw");
+        }
+        case 6:
+        {
+            format(title, sizeof(title), "BENGKEL");
+            format(body, sizeof(body), "/buyworkshop - Beli bengkel di dekatmu~n~/wsinfo - Kelola bengkelmu~n~/wswithdraw - Ambil keuntungan~n~/repair - Perbaiki kendaraan~n~/mod - Modifikasi kendaraan");
+        }
+        case 7:
+        {
+            format(title, sizeof(title), "GARASI KOTA");
+            format(body, sizeof(body), "/garage - Titip / ambil / transfer kendaraan~n~/garages - Daftar semua garasi~n~Tekan ENTER (F) di dekat garasi~n~untuk membuka menu");
+        }
+        case 8:
+        {
+            format(title, sizeof(title), "ZONA");
+            format(body, sizeof(body), "/zones - Daftar & detail zona dinamis");
+        }
+        case 9:
+        {
+            format(title, sizeof(title), "DEALER");
+            format(body, sizeof(body), "/dealer - Showroom dealer terdekat~n~/dealers - Daftar semua dealer~n~/buydealer - Beli dealer di dekatmu~n~/dealerinfo - Kelola dealermu~n~/dealerwithdraw - Ambil komisi~n~/selldealer - Jual dealermu");
+        }
+        case 10:
+        {
+            format(title, sizeof(title), "POM BENSIN");
+            format(body, sizeof(body), "/refuel - Isi bensin (jadi sopir di pom)~n~/gasstations - Daftar semua pom~n~/buygasstation - Beli pom di dekatmu~n~/gasinfo - Kelola pom bensinmu~n~/setfuelprice - Atur harga per liter~n~/gaswithdraw - Ambil keuntungan~n~/sellgasstation - Jual pom bensinmu");
+        }
+        default: return 0;
+    }
+    new opts[1][64] = {"Kembali"};
+    UI_ShowMenu(playerid, "dialog_HelpBack", title, body, opts, 1);
+    return 1;
+}
+
+// Dialog:HelpMenu - klik kategori bantuan (UI modern).
+Dialog:HelpMenu(playerid, response, listitem, inputtext[])
+{
+    if (!response) return 1;
+    Help_ShowCategory(playerid, listitem);
+    return 1;
+}
+
+// Dialog:HelpBack - tombol kembali ke menu kategori bantuan.
+Dialog:HelpBack(playerid, response, listitem, inputtext[])
+{
+    if (!response) return 1;
+    Help_ShowMenu(playerid);
     return 1;
 }
 
@@ -922,11 +1022,10 @@ public OnPlayerCommandText(playerid, cmdtext[])
     }
 
     // /help - daftar perintah
+    // /help - menu bantuan modern (UI textdraw, bukan dialog)
     if (strcmp(cmd, "/help", true) == 0)
     {
-        Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan",
-            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n/inv - Membuka tas inventory (textdraw)\n/starterpack - Klaim paket warga baru (sekali per karakter)\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\nTekan ENTER (F) di dekat bisnis untuk interaksi\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu (atau tekan ENTER di depan rumah dijual)\nTekan ENTER (F) di depan pintu rumah untuk masuk/keluar\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nFraksi:\n/finfo - Info fraksimu & daftar anggota\n/factions - Daftar semua fraksi di server\n/f [pesan] - Chat khusus anggota fraksi\n/duty - Mulai/selesai duty (seragam & senjata dinas, di markas)\n/finvite [id] - Undang pemain (Wakil Ketua+)\n/fkick [id] - Keluarkan anggota (Wakil Ketua+)\n/fquit - Keluar dari fraksi\n/setrank [id] [rank] - Atur rank anggota (Ketua)\n/fdeposit [jumlah] - Setor ke kas fraksi\n/fwithdraw [jumlah] - Ambil kas fraksi (Ketua)\n\nKeluarga:\n/createfamily [nama] - Dirikan keluarga/gangster (Rp50 juta tunai)\n/faminfo - Info keluargamu & daftar anggota\n/families - Daftar semua keluarga di server\n/fam [pesan] - Chat khusus anggota keluarga\n/famcolor - Ganti warna identitas keluarga (Ketua)\n/faminvite [id] - Undang pemain (Tangan Kanan+)\n/famkick [id] - Keluarkan anggota (Tangan Kanan+)\n/famquit - Keluar dari keluarga\n/setfamrank [id] [rank] - Atur rank anggota (Ketua)\n/famdeposit [jumlah] - Setor ke kas keluarga\n/famwithdraw [jumlah] - Ambil kas keluarga (Ketua)\n\nBengkel:\n/buyworkshop - Membeli bengkel di dekatmu\n/wsinfo - Mengelola bengkelmu (ambil untung, jual)\n/wswithdraw - Mengambil keuntungan bengkel\n/repair - Perbaiki kendaraanmu di bengkel\n/mod - Modifikasi kendaraan (warna, komponen, neon) di bengkel\n\nGarasi Kota:\n/garage - Titip / ambil / transfer kendaraan di garasi terdekat\nTekan ENTER (F) di dekat garasi untuk membuka menu\n/garages - Daftar semua garasi kota\n\nZona:\n/zones - Daftar & detail zona dinamis\n\nDealer Kendaraan:\n/dealer - Showroom dealer terdekat (lihat stok, test drive, beli kendaraan)\n/dealers - Daftar semua dealer di server\n/buydealer - Membeli dealer di dekatmu\n/dealerinfo - Mengelola dealermu (info, ambil komisi, jual)\n/dealerwithdraw - Mengambil komisi penjualan dealer\n/selldealer - Menjual kembali dealermu\n\nPom Bensin:\n/refuel - Isi bensin kendaraan di pom terdekat (jadi sopir)\n/gasstations - Daftar semua pom bensin di server\n/buygasstation - Membeli pom bensin di dekatmu\n/gasinfo - Mengelola pom bensinmu (stok, harga, untung, jual)\n/setfuelprice - Atur harga bensin per liter (pemilik pom)\n/gaswithdraw - Mengambil keuntungan pom bensin\n/sellgasstation - Menjual kembali pom bensinmu\n\nKetik /helpadmin untuk daftar perintah admin",
-            "Tutup", "");
+        Help_ShowMenu(playerid);
         return 1;
     }
 
@@ -2237,6 +2336,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 // OnPlayerClickPlayerTextDraw: meneruskan klik textdraw ke sistem inventory.
 public OnPlayerClickPlayerTextDraw(playerid, PlayerText:playertextid)
 {
+    if (UI_OnMenuClick(playerid, playertextid)) return 1;
     if (Inventory_OnClickTD(playerid, playertextid)) return 1;
     return 0;
 }

@@ -56,13 +56,13 @@ public OnStarterpackCheck(playerid)
         SendClientMessage(playerid, COLOR_GREY, "Kamu sudah mengambil starterpack untuk karakter ini.");
         return 1;
     }
-    new cash[32], msg[512];
+    new cash[32], sub[512];
     FormatRupiah(STARTER_CASH, cash, sizeof(cash));
-    format(msg, sizeof(msg),
-        "Selamat datang, warga baru!\n\nIsi paket starterpack:\n- Uang tunai %s\n- Roti x5, Air Mineral x5, Coconut Water x3\n- Kopi x2, Obat x2\n- Motor Sanchez gratis (kendaraan pribadi)\n\nItem makanan & minuman masuk ke inventory (/inv).\nPaket ini hanya bisa diklaim SATU KALI per karakter.",
+    format(sub, sizeof(sub),
+        "Selamat datang, warga baru!~n~Isi paket starterpack:~n~- Uang tunai %s~n~- Roti x5, Air Mineral x5, Coconut Water x3~n~- Kopi x2, Obat x2~n~- Motor Sanchez gratis~n~Item masuk ke inventory (/inv).~n~Hanya bisa diklaim SATU KALI.",
         cash);
-    Dialog_Show(playerid, StarterpackInfo, DIALOG_STYLE_MSGBOX,
-        "Starterpack Warga Baru", msg, "Ambil", "Batal");
+    new opts[2][64] = {"Ambil Paket", "Batal"};
+    UI_ShowMenu(playerid, "dialog_StarterpackInfo", "STARTERPACK", sub, opts, 2);
     return 1;
 }
 
@@ -93,6 +93,7 @@ stock Starterpack_Give(playerid)
         cash);
     SendClientMessage(playerid, COLOR_GREEN, msg);
     SendClientMessage(playerid, COLOR_YELLOW, "Tips: makan & minum dari inventory untuk menjaga kebutuhanmu.");
+    UI_Notify(playerid, UI_NT_OK, "Starterpack diklaim!");
     return 1;
 }
 
@@ -100,10 +101,10 @@ stock Starterpack_Give(playerid)
 // DIALOG (easyDialog)
 //================================================================
 
-// Dialog:StarterpackInfo - konfirmasi pengambilan paket.
+// Dialog:StarterpackInfo - konfirmasi pengambilan paket (UI modern).
 Dialog:StarterpackInfo(playerid, response, listitem, inputtext[])
 {
-    if (!response) return 1;
+    if (!response || listitem != 0) return 1; // "Ambil Paket" = opsi 0
     Starterpack_Give(playerid);
     return 1;
 }
