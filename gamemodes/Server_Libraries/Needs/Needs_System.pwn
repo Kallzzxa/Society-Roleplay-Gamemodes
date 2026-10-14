@@ -15,53 +15,53 @@
 #define NEEDS_MINUM  1
 #define NEEDS_STRESS 2
 
-new PlayerText:pNeedsLbl[MAX_PLAYERS][3];
-new PlayerText:pNeedsBg[MAX_PLAYERS][3];
-new PlayerText:pNeedsFill[MAX_PLAYERS][3];
+new PlayerText:pNeedsTD[MAX_PLAYERS][3];
 new bool:pNeedsTDCreated[MAX_PLAYERS];
 
-// HUD modern gaya NoPixel: bar tipis di kiri bawah layar.
-// Tiap bar: label + latar gelap + isi berwarna (lebar ikut nilai).
-#define NEEDS_BAR_X  115.0
-#define NEEDS_BAR_W  100.0
-#define NEEDS_BAR_H  8.0
-
-new NeedsBarLabel[3][8] = {"MAKAN", "MINUM", "STRESS"};
-new NeedsBarY[3] = {400, 418, 436};
-
-// Needs_BarColor: warna isi bar (stress terbalik: tinggi = merah).
-stock Needs_BarColor(idx, Float:value)
+// Needs_BuildBar: "Makan ~g~||||||||--~w~" (10 segmen, warna ikut nilai)
+stock Needs_BuildBar(const label[], Float:value, bool:invert, dest[], len)
 {
-    if (idx == NEEDS_MAKAN) return 0x2EE66BFF;  // hijau
-    if (idx == NEEDS_MINUM) return 0x4A9EFFFF;  // biru
-    if (value > 60.0) return 0xFF5555FF;        // stress tinggi = merah
-    if (value >= 30.0) return 0xFFAA00FF;       // sedang = oranye
-    return 0x2EE66BFF;                          // rendah = hijau
+    new filled = floatround(value / 10.0, floatround_round);
+    if (filled < 0) filled = 0;
+    if (filled > 10) filled = 10;
+    new color[4];
+    if (!invert)
+    {
+        if (value > 60.0) color = "~g~";
+        else if (value >= 30.0) color = "~y~";
+        else color = "~r~";
+    }
+    else
+    {
+        if (value > 60.0) color = "~r~";
+        else if (value >= 30.0) color = "~y~";
+        else color = "~g~";
+    }
+    new bar[12], pos = 0;
+    for (new i = 0; i < 10; i++)
+    {
+        bar[pos++] = (i < filled) ? ('|') : ('-');
+    }
+    bar[pos] = EOS;
+    format(dest, len, "%s %s%s~w~", label, color, bar);
+    return 1;
 }
 
-// Needs_CreateTextDraws: membuat 9 player-textdraw (label+latar+isi x3)
+// Needs_CreateTextDraws: membuat 3 player-textdraw (makan, minum, stress)
 stock Needs_CreateTextDraws(playerid)
 {
     if (UI_IsCef(playerid)) return 1; // dirender via WebView (HUD HTML)
     if (pNeedsTDCreated[playerid]) return 1;
+    pNeedsTD[playerid][NEEDS_MAKAN] = CreatePlayerTextDraw(playerid, 505.0, 385.0, "Makan");
+    pNeedsTD[playerid][NEEDS_MINUM] = CreatePlayerTextDraw(playerid, 505.0, 399.0, "Minum");
+    pNeedsTD[playerid][NEEDS_STRESS] = CreatePlayerTextDraw(playerid, 505.0, 413.0, "Stress");
     for (new i = 0; i < 3; i++)
     {
-        new Float:ly = float(NeedsBarY[i]);
-        pNeedsLbl[playerid][i] = CreatePlayerTextDraw(playerid, 60.0, ly, NeedsBarLabel[i]);
-        PlayerTextDrawFont(playerid, pNeedsLbl[playerid][i], 1);
-        PlayerTextDrawLetterSize(playerid, pNeedsLbl[playerid][i], 0.20, 0.9);
-        PlayerTextDrawColor(playerid, pNeedsLbl[playerid][i], 0xFFFFFFFF);
-        PlayerTextDrawSetOutline(playerid, pNeedsLbl[playerid][i], 1);
-
-        pNeedsBg[playerid][i] = CreatePlayerTextDraw(playerid, NEEDS_BAR_X, ly + 2.0, "_");
-        PlayerTextDrawTextSize(playerid, pNeedsBg[playerid][i], NEEDS_BAR_X + NEEDS_BAR_W, ly + 2.0 + NEEDS_BAR_H);
-        PlayerTextDrawUseBox(playerid, pNeedsBg[playerid][i], 1);
-        PlayerTextDrawBoxColor(playerid, pNeedsBg[playerid][i], 0x0C0C0CCC);
-
-        pNeedsFill[playerid][i] = CreatePlayerTextDraw(playerid, NEEDS_BAR_X, ly + 2.0, "_");
-        PlayerTextDrawTextSize(playerid, pNeedsFill[playerid][i], NEEDS_BAR_X + NEEDS_BAR_W, ly + 2.0 + NEEDS_BAR_H);
-        PlayerTextDrawUseBox(playerid, pNeedsFill[playerid][i], 1);
-        PlayerTextDrawBoxColor(playerid, pNeedsFill[playerid][i], Needs_BarColor(i, 100.0));
+        PlayerTextDrawFont(playerid, pNeedsTD[playerid][i], 1);
+        PlayerTextDrawLetterSize(playerid, pNeedsTD[playerid][i], 0.25, 1.1);
+        PlayerTextDrawSetOutline(playerid, pNeedsTD[playerid][i], 1);
+        PlayerTextDrawSetProportional(playerid, pNeedsTD[playerid][i], 1);
+        PlayerTextDrawColor(playerid, pNeedsTD[playerid][i], COLOR_WHITE);
     }
     pNeedsTDCreated[playerid] = true;
     return 1;
@@ -72,23 +72,13 @@ stock Needs_DestroyTextDraws(playerid)
     if (!pNeedsTDCreated[playerid]) return 1;
     for (new i = 0; i < 3; i++)
     {
-        PlayerTextDrawDestroy(playerid, pNeedsLbl[playerid][i]);
-        PlayerTextDrawDestroy(playerid, pNeedsBg[playerid][i]);
-        PlayerTextDrawDestroy(playerid, pNeedsFill[playerid][i]);
+        PlayerTextDrawDestroy(playerid, pNeedsTD[playerid][i]);
     }
     pNeedsTDCreated[playerid] = false;
     return 1;
 }
 
-// Needs_NeedValue: mengambil nilai kebutuhan dari data pemain.
-stock Float:Needs_NeedValue(playerid, idx)
-{
-    if (idx == NEEDS_MAKAN) return Society_PlayerData[playerid][sPHunger];
-    if (idx == NEEDS_MINUM) return Society_PlayerData[playerid][sPThirst];
-    return Society_PlayerData[playerid][sPStress];
-}
-
-// Needs_UpdateTextDraws: menggambar ulang lebar & warna bar sesuai nilai
+// Needs_UpdateTextDraws: menggambar ulang isi bar sesuai nilai saat ini
 stock Needs_UpdateTextDraws(playerid)
 {
     if (UI_IsCef(playerid))
@@ -99,17 +89,13 @@ stock Needs_UpdateTextDraws(playerid)
             Society_PlayerData[playerid][sPStress]);
     }
     if (!pNeedsTDCreated[playerid]) return 0;
-    for (new i = 0; i < 3; i++)
-    {
-        new Float:val = Needs_NeedValue(playerid, i);
-        if (val < 0.0) val = 0.0;
-        if (val > 100.0) val = 100.0;
-        new Float:ly = float(NeedsBarY[i]);
-        PlayerTextDrawTextSize(playerid, pNeedsFill[playerid][i],
-            NEEDS_BAR_X + (val / 100.0) * NEEDS_BAR_W, ly + 2.0 + NEEDS_BAR_H);
-        PlayerTextDrawBoxColor(playerid, pNeedsFill[playerid][i], Needs_BarColor(i, val));
-        PlayerTextDrawShow(playerid, pNeedsFill[playerid][i]); // terapkan ulang ukuran
-    }
+    new str[48];
+    Needs_BuildBar("Makan", Society_PlayerData[playerid][sPHunger], false, str, sizeof(str));
+    PlayerTextDrawSetString(playerid, pNeedsTD[playerid][NEEDS_MAKAN], str);
+    Needs_BuildBar("Minum", Society_PlayerData[playerid][sPThirst], false, str, sizeof(str));
+    PlayerTextDrawSetString(playerid, pNeedsTD[playerid][NEEDS_MINUM], str);
+    Needs_BuildBar("Stress", Society_PlayerData[playerid][sPStress], true, str, sizeof(str));
+    PlayerTextDrawSetString(playerid, pNeedsTD[playerid][NEEDS_STRESS], str);
     return 1;
 }
 
@@ -120,9 +106,7 @@ stock Needs_Show(playerid)
     Needs_UpdateTextDraws(playerid);
     for (new i = 0; i < 3; i++)
     {
-        PlayerTextDrawShow(playerid, pNeedsLbl[playerid][i]);
-        PlayerTextDrawShow(playerid, pNeedsBg[playerid][i]);
-        PlayerTextDrawShow(playerid, pNeedsFill[playerid][i]);
+        PlayerTextDrawShow(playerid, pNeedsTD[playerid][i]);
     }
     return 1;
 }
@@ -132,9 +116,7 @@ stock Needs_Hide(playerid)
     if (!pNeedsTDCreated[playerid]) return 0;
     for (new i = 0; i < 3; i++)
     {
-        PlayerTextDrawHide(playerid, pNeedsLbl[playerid][i]);
-        PlayerTextDrawHide(playerid, pNeedsBg[playerid][i]);
-        PlayerTextDrawHide(playerid, pNeedsFill[playerid][i]);
+        PlayerTextDrawHide(playerid, pNeedsTD[playerid][i]);
     }
     return 1;
 }

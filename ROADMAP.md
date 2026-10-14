@@ -20,31 +20,6 @@ commit + push, lalu tandai selesai di file ini.
       menit, efek lapar/haus/stress ke nyawa, command /eat & /drink,
       tersimpan di DB (kolom hunger/thirst/stress)
 
-## Berikutnya — MIGRASI UI MODERN (permintaan user 2026-10-14)
-
-Tema diubah dari oldschool menjadi modern ala FiveM NoPixel (riset YouTube
-2026-10-14: HUD kiri-bawah, notifikasi pil kanan-atas, menu konteks gelap
-transparan, aksen teal/hijau). Dialog SA-MP diganti textdraw modern secara
-bertahap. Framework: `Server_Libraries/UI/UI_Modern.pwn` — `UI_ShowMenu`
-(menu klik, callback ke handler dialog yang sama via CallLocalFunction),
-`UI_Notify` (notifikasi auto-hilang), palet `UI_COL_*`.
-
-- [x] **Fase 1** (selesai 2026-10-14): UI kit + HUD needs gaya NoPixel
-      (bar tipis MAKAN hijau / MINUM biru / STRESS kiri-bawah) +
-      `/help` jadi menu kategori modern + dialog starterpack jadi menu
-      modern + notifikasi sukses klaim starterpack.
-- [ ] **Fase 2**: migrasi dialog pemain yang sering dipakai → UI modern:
-      `/stats` (menu bertingkat), `/vlist`, `/garage`, `/dealer` (showroom),
-      `/bizinfo`, `/houseinfo`, `/wsinfo`, `/gasinfo`, `/dealerinfo`,
-      `/finfo`, `/faminfo`, `/zones`, `/helpadmin` (panel konten panjang).
-- [ ] **Fase 3**: migrasi dialog pembuatan/pembelian (input tetap dialog):
-      `/createbisnis`, `/createhouse`, `/createws`, `/creategarage`,
-      `/createzone`, `/createdealer`, `/creategasstation`, `/createfamily`,
-      `/buyvehicle`, konfirmasi beli (rumah/bisnis/dealer).
-- [ ] **Fase 4**: sentuhan akhir — progress bar modern (ala NoPixel taskbar)
-      untuk aksi berdurasi (refuel, repair, mancing, nambang), ikon suara
-      (voice) di HUD, rapikan sisa SendClientMessage penting jadi notifikasi.
-
 ## Berikutnya — PRIORITAS (permintaan user 2026-10-13)
 
 Desain acuan: pola standar komunitas SA-MP (bisnis/rumah/kendaraan dinamis via
