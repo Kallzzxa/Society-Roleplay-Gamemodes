@@ -36,17 +36,20 @@ Bahasa Indonesia, compile 0 error, commit+push tiap item.
       pemilik, pemilik online diberi tahu. Modul:
       `Server_Libraries/Business/Business_System.pwn`.
 - [x] **Dynamic House** (selesai 2026-10-14): tabel `houses`
-      (id, owner_char_id, price, ent_x/y/z, ent_int, ent_vw,
-      exit_x/y/z, exit_int, locked). Admin: `/createhouse [harga]`
-      2 langkah — berdiri di pintu MASUK ketik perintah, lalu pergi ke
-      titik pintu KELUAR di dalam interior dan ketik `/createhouse` lagi.
-      Pemain: `/buyhouse`, `/enterhouse` & `/exithouse`,
-      `/lockhouse`, `/sellhouse` (kembali 70%), `/houseinfo` (dialog
-      kelola: kunci/buka, jual). Virtual world unik per rumah
-      (= id DB) supaya penghuni rumah berbeda tidak saling melihat.
-      Label 3D: nomor rumah + harga + status (Dijual/Pemilik) +
-      [Terkunci]/[Terbuka]. Jumlah rumah tampil di /stats > Aset.
-      Modul: `Server_Libraries/House/House_System.pwn`.
+      (id, owner_char_id, price, type, location, ent_x/y/z, ent_int,
+      ent_vw, exit_x/y/z, exit_int, locked). Admin: `/createhouse
+      [harga] [tipe] [lokasi]` 2 langkah (tipe 0=Small 1=Medium 2=Large;
+      lokasi = nama area). Pemain: `/buyhouse`, `/lockhouse`,
+      `/sellhouse` (kembali 70%), `/houseinfo` (dialog kelola).
+      Masuk/keluar rumah pakai tombol ENTER (F) — tanpa command.
+      Tombol ENTER di dekat bisnis: dialog beli (dijual), kelola
+      (milik sendiri), atau info (milik orang lain). Virtual world unik
+      per rumah (= id DB). Label 3D format custom user: hijau `[ID:x]`
+      + `This House For Sell`, putih `Location:` kuning nama lokasi,
+      putih `Type:` kuning Small/Medium/Large, aksi `/buyhouse`;
+      bila dimiliki: `Location:`, `Owned By:`, `Type:`,
+      `Press ENTER To Enter a house`. Jumlah rumah tampil di
+      /stats > Aset. Modul: `Server_Libraries/House/House_System.pwn`.
 - [x] **Private Vehicle** (selesai 2026-10-14): tabel `player_vehicles`
       (id, char_id, model, pos_x/y/z, angle, color1, color2, plate, locked,
       fuel). Maks 2 per karakter, 16 model di katalog (Sanchez Rp45jt s/d

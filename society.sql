@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS `houses` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `owner_char_id` INT DEFAULT 0,
     `price` INT DEFAULT 0,
+    `type` TINYINT DEFAULT 0,
+    `location` VARCHAR(64) DEFAULT '',
     `ent_x` FLOAT NOT NULL,
     `ent_y` FLOAT NOT NULL,
     `ent_z` FLOAT NOT NULL,
@@ -94,6 +96,8 @@ CREATE TABLE IF NOT EXISTS `houses` (
 
 -- Untuk database yang sudah ada (dibuat sebelum update rumah dinamis), jalankan:
 -- (cukup import ulang blok CREATE TABLE `houses` di atas)
+-- Atau migrasi manual:
+-- ALTER TABLE `houses` ADD COLUMN `type` TINYINT DEFAULT 0, ADD COLUMN `location` VARCHAR(64) DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS `player_vehicles` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,

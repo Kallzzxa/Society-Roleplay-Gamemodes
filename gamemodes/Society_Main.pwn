@@ -21,7 +21,7 @@
 //  - Autosave tiap 10 menit + perintah /save
 //  - Mata uang Rupiah dengan format Rp1.500.000
 //  - Bisnis dinamis: /createbisnis (admin), /buybusiness, /bizinfo, /bizwithdraw, /sellbusiness
-//  - Rumah dinamis: /createhouse (admin), /buyhouse, /enterhouse, /exithouse, /lockhouse, /sellhouse, /houseinfo
+//  - Rumah dinamis: /createhouse (admin), /buyhouse, /lockhouse, /sellhouse, /houseinfo (masuk/keluar pakai ENTER)
 //  - Fraksi dinamis: /createfaction (admin), /finvite, /fkick, /setrank, /f, /duty (seragam+senjata dinas), /finfo, /factions, /fdeposit, /fwithdraw, /fsetleader (admin), /fquit
 //  - Bengkel dinamis: /createws (admin), /buyworkshop, /wsinfo, /wswithdraw, /mod (warna, komponen, neon), /repair
 //  - Garasi kota dinamis: /creategarage (admin), /garage (titip/ambil kendaraan), /garages
@@ -851,7 +851,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (strcmp(cmd, "/help", true) == 0)
     {
         Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan",
-            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu\n/enterhouse - Masuk ke rumah\n/exithouse - Keluar dari dalam rumah\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nFraksi:\n/finfo - Info fraksimu & daftar anggota\n/factions - Daftar semua fraksi di server\n/f [pesan] - Chat khusus anggota fraksi\n/duty - Mulai/selesai duty (seragam & senjata dinas, di markas)\n/finvite [id] - Undang pemain (Wakil Ketua+)\n/fkick [id] - Keluarkan anggota (Wakil Ketua+)\n/fquit - Keluar dari fraksi\n/setrank [id] [rank] - Atur rank anggota (Ketua)\n/fdeposit [jumlah] - Setor ke kas fraksi\n/fwithdraw [jumlah] - Ambil kas fraksi (Ketua)\n\nKeluarga:\n/createfamily [nama] - Dirikan keluarga/gangster (Rp50 juta tunai)\n/faminfo - Info keluargamu & daftar anggota\n/families - Daftar semua keluarga di server\n/fam [pesan] - Chat khusus anggota keluarga\n/famcolor - Ganti warna identitas keluarga (Ketua)\n/faminvite [id] - Undang pemain (Tangan Kanan+)\n/famkick [id] - Keluarkan anggota (Tangan Kanan+)\n/famquit - Keluar dari keluarga\n/setfamrank [id] [rank] - Atur rank anggota (Ketua)\n/famdeposit [jumlah] - Setor ke kas keluarga\n/famwithdraw [jumlah] - Ambil kas keluarga (Ketua)\n\nBengkel:\n/buyworkshop - Membeli bengkel di dekatmu\n/wsinfo - Mengelola bengkelmu (ambil untung, jual)\n/wswithdraw - Mengambil keuntungan bengkel\n/repair - Perbaiki kendaraanmu di bengkel\n/mod - Modifikasi kendaraan (warna, komponen, neon) di bengkel\n\nGarasi Kota:\n/garage - Titip / ambil kendaraan di garasi terdekat\n/garages - Daftar semua garasi kota\n\nZona:\n/zones - Daftar & detail zona dinamis\n\nDealer Kendaraan:\n/dealer - Showroom dealer terdekat (lihat stok, test drive, beli kendaraan)\n/dealers - Daftar semua dealer di server\n/buydealer - Membeli dealer di dekatmu\n/dealerinfo - Mengelola dealermu (info, ambil komisi, jual)\n/dealerwithdraw - Mengambil komisi penjualan dealer\n/selldealer - Menjual kembali dealermu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/adminduty - Nyalakan/matikan mode duty (nama berwarna oranye)\n/admins - Melihat daftar admin online\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] - (Admin 3+) Buat rumah dinamis (2 langkah)\n/createfaction [tipe] [nama] - (Admin 3+) Buat fraksi dinamis di posisimu\n/fsetleader [id] - (Admin 4+) Tunjuk ketua fraksi\n/famsetleader [id] - (Admin 4+) Tunjuk ketua keluarga\n/createws [nama] [harga] - (Admin 3+) Buat bengkel dinamis di posisimu\n/creategarage [nama] [biaya] - (Admin 3+) Buat garasi kota di posisimu\n/createzone [nama] [tipe] - (Admin 3+) Buat zona 100x100m (0=Greenzone, 1=Zona Bahaya)\n/deletezone - (Admin 4+) Hapus zona tempatmu berdiri\n/createdealer [nama] [tipe] [harga] - (Admin 3+) Buat dealer kendaraan di posisimu (tipe 0=Umum, 1=Ekonomis, 2=Sport, 3=Motor)\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
+            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\nTekan ENTER (F) di dekat bisnis untuk interaksi\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu (atau tekan ENTER di depan rumah dijual)\nTekan ENTER (F) di depan pintu rumah untuk masuk/keluar\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nFraksi:\n/finfo - Info fraksimu & daftar anggota\n/factions - Daftar semua fraksi di server\n/f [pesan] - Chat khusus anggota fraksi\n/duty - Mulai/selesai duty (seragam & senjata dinas, di markas)\n/finvite [id] - Undang pemain (Wakil Ketua+)\n/fkick [id] - Keluarkan anggota (Wakil Ketua+)\n/fquit - Keluar dari fraksi\n/setrank [id] [rank] - Atur rank anggota (Ketua)\n/fdeposit [jumlah] - Setor ke kas fraksi\n/fwithdraw [jumlah] - Ambil kas fraksi (Ketua)\n\nKeluarga:\n/createfamily [nama] - Dirikan keluarga/gangster (Rp50 juta tunai)\n/faminfo - Info keluargamu & daftar anggota\n/families - Daftar semua keluarga di server\n/fam [pesan] - Chat khusus anggota keluarga\n/famcolor - Ganti warna identitas keluarga (Ketua)\n/faminvite [id] - Undang pemain (Tangan Kanan+)\n/famkick [id] - Keluarkan anggota (Tangan Kanan+)\n/famquit - Keluar dari keluarga\n/setfamrank [id] [rank] - Atur rank anggota (Ketua)\n/famdeposit [jumlah] - Setor ke kas keluarga\n/famwithdraw [jumlah] - Ambil kas keluarga (Ketua)\n\nBengkel:\n/buyworkshop - Membeli bengkel di dekatmu\n/wsinfo - Mengelola bengkelmu (ambil untung, jual)\n/wswithdraw - Mengambil keuntungan bengkel\n/repair - Perbaiki kendaraanmu di bengkel\n/mod - Modifikasi kendaraan (warna, komponen, neon) di bengkel\n\nGarasi Kota:\n/garage - Titip / ambil kendaraan di garasi terdekat\n/garages - Daftar semua garasi kota\n\nZona:\n/zones - Daftar & detail zona dinamis\n\nDealer Kendaraan:\n/dealer - Showroom dealer terdekat (lihat stok, test drive, beli kendaraan)\n/dealers - Daftar semua dealer di server\n/buydealer - Membeli dealer di dekatmu\n/dealerinfo - Mengelola dealermu (info, ambil komisi, jual)\n/dealerwithdraw - Mengambil komisi penjualan dealer\n/selldealer - Menjual kembali dealermu\n\nPerintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/adminduty - Nyalakan/matikan mode duty (nama berwarna oranye)\n/admins - Melihat daftar admin online\n/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] [tipe] [lokasi] - (Admin 3+) Buat rumah dinamis 2 langkah (tipe 0=Small 1=Medium 2=Large)\n/createfaction [tipe] [nama] - (Admin 3+) Buat fraksi dinamis di posisimu\n/fsetleader [id] - (Admin 4+) Tunjuk ketua fraksi\n/famsetleader [id] - (Admin 4+) Tunjuk ketua keluarga\n/createws [nama] [harga] - (Admin 3+) Buat bengkel dinamis di posisimu\n/creategarage [nama] [biaya] - (Admin 3+) Buat garasi kota di posisimu\n/createzone [nama] [tipe] - (Admin 3+) Buat zona 100x100m (0=Greenzone, 1=Zona Bahaya)\n/deletezone - (Admin 4+) Hapus zona tempatmu berdiri\n/createdealer [nama] [tipe] [harga] - (Admin 3+) Buat dealer kendaraan di posisimu (tipe 0=Umum, 1=Ekonomis, 2=Sport, 3=Motor)\n/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server",
             "Tutup", "");
         return 1;
     }
@@ -1122,9 +1122,10 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // /createhouse [harga] - admin level 3+: membuat rumah dinamis (2 langkah)
-    // Langkah 1: berdiri di posisi PINTU MASUK -> /createhouse [harga]
+    // /createhouse [harga] [type] [lokasi] - admin level 3+: membuat rumah dinamis (2 langkah)
+    // Langkah 1: berdiri di posisi PINTU MASUK -> /createhouse [harga] [type] [lokasi]
     // Langkah 2: pergi ke titik PINTU KELUAR di dalam interior -> /createhouse
+    // type: 0=Small, 1=Medium, 2=Large. lokasi: nama area, spasi diganti _ (cth: Pasar_Baru)
     if (strcmp(cmd, "/createhouse", true) == 0)
     {
         if (!IsAdmin(playerid, 3))
@@ -1137,31 +1138,48 @@ public OnPlayerCommandText(playerid, cmdtext[])
             SendClientMessage(playerid, COLOR_RED, "Database sedang offline.");
             return 1;
         }
-        new sharga[32];
+        new sharga[32], stype[32], slokasi[64];
         sharga = strtok(cmdtext, idx);
-        if (strlen(sharga))
+        stype = strtok(cmdtext, idx);
+        slokasi = strtok(cmdtext, idx);
+        if (strlen(sharga) && strlen(stype) && strlen(slokasi))
         {
-            // Langkah 1: catat pintu masuk.
-            if (!IsNumeric(sharga))
+            // Langkah 1: catat pintu masuk + tipe + lokasi.
+            if (!IsNumeric(sharga) || !IsNumeric(stype))
             {
-                SendClientMessage(playerid, COLOR_RED, "Harga harus berupa angka.");
+                SendClientMessage(playerid, COLOR_RED, "Harga dan tipe harus berupa angka.");
                 return 1;
             }
-            new price = strval(sharga);
+            new price = strval(sharga), type = strval(stype);
             if (price < 1000000 || price > 100000000)
             {
                 SendClientMessage(playerid, COLOR_RED, "Harga rumah harus Rp1.000.000 - Rp100.000.000.");
                 return 1;
             }
-            House_CreateStep1(playerid, price);
+            if (type < 0 || type > 2)
+            {
+                SendClientMessage(playerid, COLOR_RED, "Tipe rumah harus 0=Small, 1=Medium, 2=Large.");
+                return 1;
+            }
+            if (strlen(slokasi) < 3 || strlen(slokasi) > 60)
+            {
+                SendClientMessage(playerid, COLOR_RED, "Nama lokasi harus 3-60 karakter.");
+                return 1;
+            }
+            for (new i = 0; slokasi[i] != EOS; i++)
+            {
+                if (slokasi[i] == '_') slokasi[i] = ' ';
+            }
+            House_CreateStep1(playerid, price, type, slokasi);
         }
         else
         {
             // Langkah 2: catat pintu keluar & simpan.
             if (pHouseStep[playerid] != 1)
             {
-                SendClientMessage(playerid, COLOR_GREY, "Gunakan: /createhouse [harga]");
-                SendClientMessage(playerid, COLOR_GREY, "Berdiri di posisi pintu MASUK, ketik /createhouse [harga],");
+                SendClientMessage(playerid, COLOR_GREY, "Gunakan: /createhouse [harga] [tipe] [lokasi]");
+                SendClientMessage(playerid, COLOR_GREY, "Tipe: 0=Small, 1=Medium, 2=Large. Lokasi: nama area (spasi diganti _).");
+                SendClientMessage(playerid, COLOR_GREY, "Berdiri di posisi pintu MASUK, ketik perintah di atas,");
                 SendClientMessage(playerid, COLOR_GREY, "lalu pergi ke titik pintu KELUAR di interior dan ketik /createhouse.");
                 return 1;
             }
@@ -1185,42 +1203,6 @@ public OnPlayerCommandText(playerid, cmdtext[])
             return 1;
         }
         House_Buy(playerid, slot);
-        return 1;
-    }
-
-    // /enterhouse - masuk ke rumah lewat pintu masuk
-    if (strcmp(cmd, "/enterhouse", true) == 0)
-    {
-        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
-        {
-            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
-            return 1;
-        }
-        new slot = House_NearestEntrance(playerid);
-        if (slot == -1)
-        {
-            SendClientMessage(playerid, COLOR_RED, "Tidak ada pintu rumah di dekatmu.");
-            return 1;
-        }
-        House_Enter(playerid, slot);
-        return 1;
-    }
-
-    // /exithouse - keluar dari dalam rumah
-    if (strcmp(cmd, "/exithouse", true) == 0)
-    {
-        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0)
-        {
-            SendClientMessage(playerid, COLOR_RED, "Anda belum memilih karakter.");
-            return 1;
-        }
-        new slot = House_InsideHouse(playerid);
-        if (slot == -1)
-        {
-            SendClientMessage(playerid, COLOR_RED, "Kamu tidak sedang berada di dalam rumah.");
-            return 1;
-        }
-        House_Exit(playerid, slot);
         return 1;
     }
 
@@ -2045,6 +2027,58 @@ public OnPlayerCommandText(playerid, cmdtext[])
     }
 
     SendClientMessage(playerid, COLOR_GREY, "Perintah tidak dikenal. Ketik /help.");
+    return 1;
+}
+
+//================================================================
+// INTERAKSI TOMBOL
+//================================================================
+
+// OnPlayerKeyStateChange: tombol ENTER (F) untuk interaksi pintu rumah & bisnis.
+// - Di dalam rumah + dekat pintu keluar -> keluar rumah.
+// - Di depan pintu rumah dijual -> dialog konfirmasi beli.
+// - Di depan pintu rumah dimiliki -> masuk rumah.
+// - Di dekat bisnis dijual -> dialog konfirmasi beli.
+// - Di dekat bisnis sendiri -> dialog kelola (/bizinfo).
+// - Di dekat bisnis orang lain -> info singkat.
+public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
+{
+    if ((newkeys & KEY_SECONDARY_ATTACK) && !(oldkeys & KEY_SECONDARY_ATTACK))
+    {
+        if (!Society_PlayerData[playerid][sPLogged] || Society_PlayerData[playerid][sPCharID] <= 0) return 1;
+        if (IsPlayerInAnyVehicle(playerid)) return 1;
+
+        // 1. Sedang di dalam rumah & dekat pintu keluar -> keluar.
+        new inslot = House_InsideHouse(playerid);
+        if (inslot != -1)
+        {
+            if (GetPlayerDistanceFromPoint(playerid, hExitX[inslot], hExitY[inslot], hExitZ[inslot]) <= HOUSE_RANGE)
+            {
+                House_Exit(playerid, inslot);
+                return 1;
+            }
+        }
+
+        // 2. Dekat pintu masuk rumah.
+        new hslot = House_NearestEntrance(playerid);
+        if (hslot != -1)
+        {
+            if (hOwnerCharID[hslot] <= 0) House_BuyConfirm(playerid, hslot);
+            else House_Enter(playerid, hslot);
+            return 1;
+        }
+
+        // 3. Dekat bisnis.
+        new bslot = Business_Nearest(playerid);
+        if (bslot != -1)
+        {
+            new charid = Society_PlayerData[playerid][sPCharID];
+            if (bOwnerCharID[bslot] <= 0) Business_BuyConfirm(playerid, bslot);
+            else if (bOwnerCharID[bslot] == charid) Business_ShowInfo(playerid);
+            else Business_InfoPublic(playerid, bslot);
+            return 1;
+        }
+    }
     return 1;
 }
 

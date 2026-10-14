@@ -312,6 +312,49 @@ stock Business_ShowInfo(playerid)
     return 1;
 }
 
+// Business_BuyConfirm: dialog konfirmasi beli bisnis (dari tombol ENTER di dekat bisnis dijual).
+stock Business_BuyConfirm(playerid, slot)
+{
+    if (slot < 0 || slot >= MAX_BUSINESS || !bExists[slot]) return 0;
+    if (bOwnerCharID[slot] > 0) return 0;
+    pBizMenuSlot[playerid] = slot;
+    new harga[32], msg[320];
+    FormatRupiah(bPrice[slot], harga, sizeof(harga));
+    format(msg, sizeof(msg),
+        "Yakin ingin membeli bisnis ini?\n\nNama: %s\nTipe: %s\nHarga: %s",
+        bName[slot], Business_TypeName[bType[slot]], harga);
+    Dialog_Show(playerid, BizBuyConfirm, DIALOG_STYLE_MSGBOX, "Beli Bisnis", msg, "Beli", "Batal");
+    return 1;
+}
+
+// Business_InfoPublic: info singkat bisnis milik orang lain (dari tombol ENTER).
+stock Business_InfoPublic(playerid, slot)
+{
+    if (slot < 0 || slot >= MAX_BUSINESS || !bExists[slot]) return 0;
+    new info[256];
+    format(info, sizeof(info),
+        "Nama: %s\nTipe: %s\nPemilik: %s",
+        bName[slot], Business_TypeName[bType[slot]], bOwnerName[slot]);
+    Dialog_Show(playerid, BizPublicInfo, DIALOG_STYLE_MSGBOX, "Info Bisnis", info, "Tutup", "");
+    return 1;
+}
+
+// Dialog:BizBuyConfirm - konfirmasi pembelian bisnis via tombol ENTER.
+Dialog:BizBuyConfirm(playerid, response, listitem, inputtext[])
+{
+    if (!response) return 1;
+    new slot = pBizMenuSlot[playerid];
+    if (slot < 0 || slot >= MAX_BUSINESS || !bExists[slot]) return 1;
+    Business_Buy(playerid, slot);
+    return 1;
+}
+
+// Dialog:BizPublicInfo - dialog info, abaikan respon.
+Dialog:BizPublicInfo(playerid, response, listitem, inputtext[])
+{
+    return 1;
+}
+
 // Business_LoadAll: memuat semua bisnis dari database saat gamemode mulai.
 stock Business_LoadAll()
 {

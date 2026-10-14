@@ -128,14 +128,14 @@ stock Workshop_RefreshLabel(slot)
     FormatRupiah(wPrice[slot], harga, sizeof(harga));
     if (wOwnerCharID[slot] <= 0)
     {
-        // Gaya label Infer: ID putih, info kuning, perintah cyan.
-        format(text, sizeof(text), "{FFFFFF}ID: %d\n{FFFF00}%s\nHarga: %s\n{00CCFF}/buyworkshop",
-            wDBID[slot], wName[slot], harga);
+        // Format label: hijau ID & status, putih label, kuning nilai, cyan perintah.
+        format(text, sizeof(text), "{33AA33}[ID:%d]\n{33AA33}This Workshop For Sell\n{FFFFFF}Harga:{FFFF00}%s\n{FFFFFF}Type {00CCFF}`/buyworkshop`{FFFFFF} for buy this workshop",
+            wDBID[slot], harga);
     }
     else
     {
-        format(text, sizeof(text), "{FFFFFF}ID: %d\n{FFFF00}%s\nPemilik: %s\n{00CCFF}/repair",
-            wDBID[slot], wName[slot], wOwnerName[slot]);
+        format(text, sizeof(text), "{33AA33}[ID:%d]\n{FFFFFF}Pemilik:{FFFF00}%s\n{FFFFFF}Type {00CCFF}`/repair`{FFFFFF} for service",
+            wDBID[slot], wOwnerName[slot]);
     }
     wLabel[slot] = Create3DTextLabel(text, 0xFFFFFFFF,
         wPosX[slot], wPosY[slot], wPosZ[slot] + 1.2, 20.0, 0, 1);

@@ -18,12 +18,17 @@
 #define HOUSE_RANGE 4.0   // jarak interaksi pintu rumah
 #define HOUSE_SELL_RATE 70 // persen harga kembali saat rumah dijual
 
+// Nama tipe rumah: 0=Small, 1=Medium, 2=Large.
+new House_TypeName[3][8] = {"Small", "Medium", "Large"};
+
 //==== DATA RUMAH ====
 new hExists[MAX_HOUSE];            // 1 jika slot terisi
 new hDBID[MAX_HOUSE];              // id baris di tabel houses
 new hOwnerCharID[MAX_HOUSE];       // id karakter pemilik (0 = belum ada pemilik)
 new hOwnerName[MAX_HOUSE][24];     // nama karakter pemilik
 new hPrice[MAX_HOUSE];             // harga beli
+new hType[MAX_HOUSE];              // 0=Small, 1=Medium, 2=Large
+new hLocation[MAX_HOUSE][64];      // nama lokasi/area rumah
 new Float:hEntX[MAX_HOUSE];        // pintu masuk (koordinat)
 new Float:hEntY[MAX_HOUSE];
 new Float:hEntZ[MAX_HOUSE];
@@ -42,6 +47,8 @@ new bool:hLabelOn[MAX_HOUSE];      // true jika label sedang tampil
 // Data sementara: pembuatan rumah dua langkah oleh admin & menu pemain.
 new pHouseStep[MAX_PLAYERS];       // 0 = belum mulai, 1 = pintu masuk tercatat
 new pHousePrice[MAX_PLAYERS];
+new pHouseType[MAX_PLAYERS];       // 0=Small, 1=Medium, 2=Large
+new pHouseLocation[MAX_PLAYERS][64];
 new Float:pHouseEntX[MAX_PLAYERS];
 new Float:pHouseEntY[MAX_PLAYERS];
 new Float:pHouseEntZ[MAX_PLAYERS];
@@ -76,18 +83,18 @@ stock House_RefreshLabel(slot)
         Delete3DTextLabel(hLabel[slot]);
         hLabelOn[slot] = false;
     }
-    new text[256], harga[32];
+    new text[320], harga[32];
     FormatRupiah(hPrice[slot], harga, sizeof(harga));
     if (hOwnerCharID[slot] <= 0)
     {
-        // Gaya label Infer: ID putih, info kuning, perintah cyan.
-        format(text, sizeof(text), "{FFFFFF}ID: %d\n{FFFF00}Rumah Dijual\nHarga: %s\n{00CCFF}/buyhouse",
-            hDBID[slot], harga);
+        // Format label: hijau ID & status, putih label, kuning nilai, cyan perintah.
+        format(text, sizeof(text), "{33AA33}[ID:%d]\n{33AA33}This House For Sell\n{FFFFFF}Location:{FFFF00}%s\n{FFFFFF}Type:{FFFF00}%s\n{FFFFFF}Type {00CCFF}`/buyhouse`{FFFFFF} for buy this house",
+            hDBID[slot], hLocation[slot], House_TypeName[hType[slot]]);
     }
     else
     {
-        format(text, sizeof(text), "{FFFFFF}ID: %d\n{FFFF00}Rumah\nPemilik: %s\n{00CCFF}/enterhouse",
-            hDBID[slot], hOwnerName[slot]);
+        format(text, sizeof(text), "{33AA33}[ID:%d]\n{FFFFFF}Location:{FFFF00}%s\n{FFFFFF}Owned By:{FFFF00}%s\n{FFFFFF}Type:{FFFF00}%s\n{FFFFFF}Press {FF4444}`ENTER`{FFFFFF} To Enter a house",
+            hDBID[slot], hLocation[slot], hOwnerName[slot], House_TypeName[hType[slot]]);
     }
     hLabel[slot] = Create3DTextLabel(text, 0xFFFFFFFF,
         hEntX[slot], hEntY[slot], hEntZ[slot] + 1.2, 20.0, hEntVW[slot], 1);
@@ -161,6 +168,8 @@ stock House_OnDisconnect(playerid)
 {
     pHouseStep[playerid] = 0;
     pHousePrice[playerid] = 0;
+    pHouseType[playerid] = 0;
+    pHouseLocation[playerid][0] = EOS;
     return 1;
 }
 
@@ -179,17 +188,22 @@ stock House_CountOwned(charid)
     return count;
 }
 
-// House_CreateStep1: admin mencatat pintu masuk (langkah pertama /createhouse).
-stock House_CreateStep1(playerid, price)
+// House_CreateStep1: admin mencatat pintu masuk + tipe + lokasi (langkah pertama /createhouse).
+stock House_CreateStep1(playerid, price, type, location[])
 {
     pHousePrice[playerid] = price;
+    pHouseType[playerid] = type;
+    format(pHouseLocation[playerid], sizeof(pHouseLocation[]), "%s", location);
     GetPlayerPos(playerid, pHouseEntX[playerid], pHouseEntY[playerid], pHouseEntZ[playerid]);
     pHouseEntInt[playerid] = GetPlayerInterior(playerid);
     pHouseEntVW[playerid] = GetPlayerVirtualWorld(playerid);
     pHouseStep[playerid] = 1;
-    SendClientMessage(playerid, COLOR_GREEN, "Pintu masuk rumah tercatat.");
+    new msg[160];
+    format(msg, sizeof(msg), "Pintu masuk tercatat. Tipe: %s | Lokasi: %s",
+        House_TypeName[type], location);
+    SendClientMessage(playerid, COLOR_GREEN, msg);
     SendClientMessage(playerid, COLOR_YELLOW, "Sekarang pergi ke titik PINTU KELUAR di dalam interior,");
-    SendClientMessage(playerid, COLOR_YELLOW, "lalu ketik /createhouse (tanpa harga) untuk menyelesaikan.");
+    SendClientMessage(playerid, COLOR_YELLOW, "lalu ketik /createhouse (tanpa argumen) untuk menyelesaikan.");
     return 1;
 }
 
@@ -207,10 +221,10 @@ stock House_CreateStep2(playerid)
     new Float:xx, Float:xy, Float:xz;
     GetPlayerPos(playerid, xx, xy, xz);
     new xint = GetPlayerInterior(playerid);
-    new query[384];
+    new query[512];
     mysql_format(g_SQL, query, sizeof(query),
-        "INSERT INTO houses (owner_char_id, price, ent_x, ent_y, ent_z, ent_int, ent_vw, exit_x, exit_y, exit_z, exit_int, locked) VALUES (0, %d, %f, %f, %f, %d, %d, %f, %f, %f, %d, 0)",
-        pHousePrice[playerid],
+        "INSERT INTO houses (owner_char_id, price, type, location, ent_x, ent_y, ent_z, ent_int, ent_vw, exit_x, exit_y, exit_z, exit_int, locked) VALUES (0, %d, %d, '%e', %f, %f, %f, %d, %d, %f, %f, %f, %d, 0)",
+        pHousePrice[playerid], pHouseType[playerid], pHouseLocation[playerid],
         pHouseEntX[playerid], pHouseEntY[playerid], pHouseEntZ[playerid],
         pHouseEntInt[playerid], pHouseEntVW[playerid],
         xx, xy, xz, xint);
@@ -248,7 +262,7 @@ stock House_Buy(playerid, slot)
     FormatRupiah(hPrice[slot], harga, sizeof(harga));
     format(msg, sizeof(msg), "Selamat! Kamu membeli rumah #%d seharga %s.", hDBID[slot], harga);
     SendClientMessage(playerid, COLOR_GREEN, msg);
-    SendClientMessage(playerid, COLOR_GREY, "Ketik /enterhouse di depan rumahmu untuk masuk.");
+    SendClientMessage(playerid, COLOR_GREY, "Tekan ENTER (F) di depan rumahmu untuk masuk.");
     return 1;
 }
 
@@ -306,7 +320,7 @@ stock House_Enter(playerid, slot)
     SetPlayerVirtualWorld(playerid, hDBID[slot]);
     SetPlayerPos(playerid, hExitX[slot], hExitY[slot], hExitZ[slot]);
     new msg[96];
-    format(msg, sizeof(msg), "Kamu memasuki rumah #%d. Ketik /exithouse untuk keluar.", hDBID[slot]);
+    format(msg, sizeof(msg), "Kamu memasuki rumah #%d. Tekan ENTER (F) untuk keluar.", hDBID[slot]);
     SendClientMessage(playerid, COLOR_GREEN, msg);
     return 1;
 }
@@ -319,6 +333,31 @@ stock House_Exit(playerid, slot)
     SetPlayerVirtualWorld(playerid, hEntVW[slot]);
     SetPlayerPos(playerid, hEntX[slot], hEntY[slot], hEntZ[slot]);
     SendClientMessage(playerid, COLOR_GREEN, "Kamu keluar dari rumah.");
+    return 1;
+}
+
+// House_BuyConfirm: dialog konfirmasi beli rumah (dari tombol ENTER di depan rumah dijual).
+stock House_BuyConfirm(playerid, slot)
+{
+    if (slot < 0 || slot >= MAX_HOUSE || !hExists[slot]) return 0;
+    if (hOwnerCharID[slot] > 0) return 0;
+    pHouseMenuSlot[playerid] = slot;
+    new harga[32], msg[320];
+    FormatRupiah(hPrice[slot], harga, sizeof(harga));
+    format(msg, sizeof(msg),
+        "Yakin ingin membeli rumah ini?\n\nLocation: %s\nType: %s\nHarga: %s",
+        hLocation[slot], House_TypeName[hType[slot]], harga);
+    Dialog_Show(playerid, HouseBuyConfirm, DIALOG_STYLE_MSGBOX, "Beli Rumah", msg, "Beli", "Batal");
+    return 1;
+}
+
+// Dialog:HouseBuyConfirm - konfirmasi pembelian rumah via tombol ENTER.
+Dialog:HouseBuyConfirm(playerid, response, listitem, inputtext[])
+{
+    if (!response) return 1;
+    new slot = pHouseMenuSlot[playerid];
+    if (slot < 0 || slot >= MAX_HOUSE || !hExists[slot]) return 1;
+    House_Buy(playerid, slot);
     return 1;
 }
 
@@ -348,7 +387,7 @@ stock House_LoadAll()
 {
     if (g_SQL == MYSQL_INVALID_HANDLE) return 0;
     mysql_tquery(g_SQL,
-        "SELECT h.id, h.owner_char_id, IFNULL(c.name, '') AS owner_name, h.price, h.ent_x, h.ent_y, h.ent_z, h.ent_int, h.ent_vw, h.exit_x, h.exit_y, h.exit_z, h.exit_int, h.locked FROM houses h LEFT JOIN characters c ON c.id = h.owner_char_id",
+        "SELECT h.id, h.owner_char_id, IFNULL(c.name, '') AS owner_name, h.price, h.type, h.location, h.ent_x, h.ent_y, h.ent_z, h.ent_int, h.ent_vw, h.exit_x, h.exit_y, h.exit_z, h.exit_int, h.locked FROM houses h LEFT JOIN characters c ON c.id = h.owner_char_id",
         "OnHouseLoaded");
     return 1;
 }
@@ -413,6 +452,8 @@ public OnHouseLoaded()
         cache_get_value_name_int(i, "owner_char_id", tmp); hOwnerCharID[i] = tmp;
         cache_get_value_name(i, "owner_name", hOwnerName[i], sizeof(hOwnerName[]));
         cache_get_value_name_int(i, "price", tmp);        hPrice[i] = tmp;
+        cache_get_value_name_int(i, "type", tmp);         hType[i] = tmp;
+        cache_get_value_name(i, "location", hLocation[i], sizeof(hLocation[]));
         cache_get_value_name_float(i, "ent_x", ftmp);     hEntX[i] = ftmp;
         cache_get_value_name_float(i, "ent_y", ftmp);     hEntY[i] = ftmp;
         cache_get_value_name_float(i, "ent_z", ftmp);     hEntZ[i] = ftmp;
@@ -450,6 +491,8 @@ public OnHouseCreated(playerid)
     hOwnerCharID[slot] = 0;
     hOwnerName[slot][0] = EOS;
     hPrice[slot] = pHousePrice[playerid];
+    hType[slot] = pHouseType[playerid];
+    format(hLocation[slot], sizeof(hLocation[]), "%s", pHouseLocation[playerid]);
     hEntX[slot] = pHouseEntX[playerid];
     hEntY[slot] = pHouseEntY[playerid];
     hEntZ[slot] = pHouseEntZ[playerid];
