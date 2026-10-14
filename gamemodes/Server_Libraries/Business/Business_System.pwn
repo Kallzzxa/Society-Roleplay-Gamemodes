@@ -90,26 +90,19 @@ stock Business_RefreshLabel(slot)
         Delete3DTextLabel(bLabel[slot]);
         bLabelOn[slot] = false;
     }
-    new text[256], harga[32], status[64], kunci[32];
+    new text[320], harga[32];
     FormatRupiah(bPrice[slot], harga, sizeof(harga));
     if (bOwnerCharID[slot] <= 0)
     {
-        format(status, sizeof(status), "Status: {33AA33}Dijual{FFFFFF}");
+        // Gaya label Infer: ID putih, info kuning, perintah cyan.
+        format(text, sizeof(text), "{FFFFFF}ID: %d\n{FFFF00}%s\nHarga: %s\nTipe: %s\n{00CCFF}/buybusiness",
+            bDBID[slot], bName[slot], harga, Business_TypeName[bType[slot]]);
     }
     else
     {
-        format(status, sizeof(status), "Status: Pemilik {FFCC00}%s{FFFFFF}", bOwnerName[slot]);
+        format(text, sizeof(text), "{FFFFFF}ID: %d\n{FFFF00}%s\nPemilik: %s\nTipe: %s\n{00CCFF}/bizinfo",
+            bDBID[slot], bName[slot], bOwnerName[slot], Business_TypeName[bType[slot]]);
     }
-    if (bLocked[slot])
-    {
-        format(kunci, sizeof(kunci), "{FF4444}[Terkunci]{FFFFFF}");
-    }
-    else
-    {
-        format(kunci, sizeof(kunci), "{33AA33}[Terbuka]{FFFFFF}");
-    }
-    format(text, sizeof(text), "{FFFF00}[BISNIS]{FFFFFF}\n%s\n%s | %s\n%s\n%s",
-        bName[slot], Business_TypeName[bType[slot]], harga, status, kunci);
     bLabel[slot] = Create3DTextLabel(text, 0xFFFFFFFF,
         bPosX[slot], bPosY[slot], bPosZ[slot] + 1.2, 20.0, 0, 1);
     bLabelOn[slot] = true;

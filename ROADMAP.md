@@ -146,6 +146,11 @@ compile 0 error, commit+push per item.
 - [ ] **Dynamic Dealer**: tabel `dealers` (id, name, pos, type
       [kendaraan]). Showroom: `/dealer` → dialog daftar kendaraan + harga,
       test drive (spawn sementara), beli langsung jadi private vehicle.
+      Label 3D gaya Infer (dari video referensi Zerowaste): `{FFFFFF}ID: X` /
+      `{FFFF00}` nama dealer (atau `Location: ...` bila dijual) /
+      `{FFFF00}` `Pemilik: ...` (atau `Harga: Rp...` bila dijual) /
+      `{FFFF00}` `Tipe: ...` / `{00CCFF}` perintah (`/buydealer` bila dijual,
+      `/dealer` bila dimiliki). Pickup tanda dolar emas (model 1274).
 - [ ] **Dynamic Pom**: tabel `gasstations` (id, owner_char_id, name, pos,
       price_per_liter, stock). `/buygasstation`, pemilik set harga `/setfuelprice`,
       pemain `/refuel` di pompa (butuh sistem bensin). Label 3D nama +

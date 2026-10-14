@@ -162,18 +162,19 @@ stock Faction_RefreshLabel(slot)
         Delete3DTextLabel(fLabel[slot]);
         fLabelOn[slot] = false;
     }
-    new text[256], embed[10], ketua[48];
+    new text[320], embed[10], ketua[48];
     Faction_Embed(fColor[slot], embed, sizeof(embed));
     if (fLeaderCharID[slot] <= 0)
     {
-        format(ketua, sizeof(ketua), "Ketua: {999999}-\n");
+        format(ketua, sizeof(ketua), "-");
     }
     else
     {
-        format(ketua, sizeof(ketua), "Ketua: {FFFFFF}%s\n", fLeaderName[slot]);
+        format(ketua, sizeof(ketua), "%s", fLeaderName[slot]);
     }
-    format(text, sizeof(text), "%s[FRAKSI]%s\n%s{FFFFFF}\n%s\n%sKetik /duty di sini{FFFFFF}",
-        embed, "{FFFFFF}", fName[slot], Faction_TypeName[fType[slot]], ketua, embed);
+    // Gaya label Infer: ID putih, info kuning, perintah cyan (nama pakai warna fraksi).
+    format(text, sizeof(text), "{FFFFFF}ID: %d\n%s%s\n{FFFF00}Tipe: %s\nKetua: %s\n{00CCFF}/duty",
+        fDBID[slot], embed, fName[slot], Faction_TypeName[fType[slot]], ketua);
     fLabel[slot] = Create3DTextLabel(text, 0xFFFFFFFF,
         fSpawnX[slot], fSpawnY[slot], fSpawnZ[slot] + 1.5, 20.0, 0, 1);
     fLabelOn[slot] = true;

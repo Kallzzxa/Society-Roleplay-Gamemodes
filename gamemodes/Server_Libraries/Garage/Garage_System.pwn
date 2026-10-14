@@ -89,9 +89,10 @@ stock Garage_RefreshLabel(slot)
     }
     new text[256], biaya[32];
     FormatRupiah(gFee[slot], biaya, sizeof(biaya));
+    // Gaya label Infer: ID putih, info kuning, perintah cyan.
     format(text, sizeof(text),
-        "{00AAFF}[GARASI]{FFFFFF}\n%s\nBiaya titip: %s\nTersimpan: %d/%d kendaraan",
-        gName[slot], biaya, Garage_StoredCount(slot), GARAGE_MAX_STORED);
+        "{FFFFFF}ID: %d\n{FFFF00}%s\nBiaya: %s | Isi: %d/%d\n{00CCFF}/garage",
+        gDBID[slot], gName[slot], biaya, Garage_StoredCount(slot), GARAGE_MAX_STORED);
     gLabel[slot] = Create3DTextLabel(text, 0xFFFFFFFF,
         gPosX[slot], gPosY[slot], gPosZ[slot] + 1.2, 20.0, 0, 1);
     gLabelOn[slot] = true;

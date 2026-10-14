@@ -124,18 +124,19 @@ stock Workshop_RefreshLabel(slot)
         Delete3DTextLabel(wLabel[slot]);
         wLabelOn[slot] = false;
     }
-    new text[256], harga[32], status[64];
+    new text[256], harga[32];
     FormatRupiah(wPrice[slot], harga, sizeof(harga));
     if (wOwnerCharID[slot] <= 0)
     {
-        format(status, sizeof(status), "Status: {33AA33}Dijual{FFFFFF}");
+        // Gaya label Infer: ID putih, info kuning, perintah cyan.
+        format(text, sizeof(text), "{FFFFFF}ID: %d\n{FFFF00}%s\nHarga: %s\n{00CCFF}/buyworkshop",
+            wDBID[slot], wName[slot], harga);
     }
     else
     {
-        format(status, sizeof(status), "Pemilik: {FFCC00}%s{FFFFFF}", wOwnerName[slot]);
+        format(text, sizeof(text), "{FFFFFF}ID: %d\n{FFFF00}%s\nPemilik: %s\n{00CCFF}/repair",
+            wDBID[slot], wName[slot], wOwnerName[slot]);
     }
-    format(text, sizeof(text), "{FF8800}[BENGKEL]{FFFFFF}\n%s\nHarga: %s\n%s",
-        wName[slot], harga, status);
     wLabel[slot] = Create3DTextLabel(text, 0xFFFFFFFF,
         wPosX[slot], wPosY[slot], wPosZ[slot] + 1.2, 20.0, 0, 1);
     wLabelOn[slot] = true;

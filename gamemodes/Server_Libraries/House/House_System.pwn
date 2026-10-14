@@ -76,26 +76,19 @@ stock House_RefreshLabel(slot)
         Delete3DTextLabel(hLabel[slot]);
         hLabelOn[slot] = false;
     }
-    new text[256], harga[32], status[64], kunci[32];
+    new text[256], harga[32];
     FormatRupiah(hPrice[slot], harga, sizeof(harga));
     if (hOwnerCharID[slot] <= 0)
     {
-        format(status, sizeof(status), "Status: {33AA33}Dijual{FFFFFF}");
+        // Gaya label Infer: ID putih, info kuning, perintah cyan.
+        format(text, sizeof(text), "{FFFFFF}ID: %d\n{FFFF00}Rumah Dijual\nHarga: %s\n{00CCFF}/buyhouse",
+            hDBID[slot], harga);
     }
     else
     {
-        format(status, sizeof(status), "Status: Pemilik {FFCC00}%s{FFFFFF}", hOwnerName[slot]);
+        format(text, sizeof(text), "{FFFFFF}ID: %d\n{FFFF00}Rumah\nPemilik: %s\n{00CCFF}/enterhouse",
+            hDBID[slot], hOwnerName[slot]);
     }
-    if (hLocked[slot])
-    {
-        format(kunci, sizeof(kunci), "{FF4444}[Terkunci]{FFFFFF}");
-    }
-    else
-    {
-        format(kunci, sizeof(kunci), "{33AA33}[Terbuka]{FFFFFF}");
-    }
-    format(text, sizeof(text), "{00CCFF}[RUMAH #%d]{FFFFFF}\nHarga: %s\n%s\n%s",
-        hDBID[slot], harga, status, kunci);
     hLabel[slot] = Create3DTextLabel(text, 0xFFFFFFFF,
         hEntX[slot], hEntY[slot], hEntZ[slot] + 1.2, 20.0, hEntVW[slot], 1);
     hLabelOn[slot] = true;
