@@ -274,6 +274,7 @@ stock Vehicle_OnDisconnect(playerid)
 // Vehicle_TDCreate: membuat PlayerTextDraw info kendaraan untuk pemain.
 stock Vehicle_TDCreate(playerid)
 {
+    if (UI_IsCef(playerid)) return 1; // info kendaraan dirender via WebView
     Vehicle_TDDestroy(playerid);
     g_VehTD[playerid] = CreatePlayerTextDraw(playerid, 545.0, 400.0, "_");
     PlayerTextDrawFont(playerid, g_VehTD[playerid], 1);
@@ -304,6 +305,11 @@ stock Vehicle_TDShow(playerid, slot)
     Vehicle_CatName(vModel[slot], nama, sizeof(nama));
     if (vLocked[slot]) format(kunci, sizeof(kunci), "Terkunci");
     else format(kunci, sizeof(kunci), "Terbuka");
+    if (UI_IsCef(playerid))
+    {
+        return UI_HudVehicle(playerid, vPlate[slot], nama, kunci,
+            floatround(vFuel[slot], floatround_round));
+    }
     format(text, sizeof(text), "[%s]~n~%s | %s~n~Bensin: %d%%",
         vPlate[slot], nama, kunci, floatround(vFuel[slot], floatround_round));
     PlayerTextDrawSetString(playerid, g_VehTD[playerid], text);
@@ -314,6 +320,7 @@ stock Vehicle_TDShow(playerid, slot)
 // Vehicle_TDHide: menyembunyikan info kendaraan.
 stock Vehicle_TDHide(playerid)
 {
+    if (UI_IsCef(playerid)) return UI_HudVehicleHide(playerid);
     PlayerTextDrawHide(playerid, g_VehTD[playerid]);
     return 1;
 }

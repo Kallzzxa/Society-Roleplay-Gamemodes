@@ -50,6 +50,7 @@ stock Needs_BuildBar(const label[], Float:value, bool:invert, dest[], len)
 // Needs_CreateTextDraws: membuat 3 player-textdraw (makan, minum, stress)
 stock Needs_CreateTextDraws(playerid)
 {
+    if (UI_IsCef(playerid)) return 1; // dirender via WebView (HUD HTML)
     if (pNeedsTDCreated[playerid]) return 1;
     pNeedsTD[playerid][NEEDS_MAKAN] = CreatePlayerTextDraw(playerid, 505.0, 385.0, "Makan");
     pNeedsTD[playerid][NEEDS_MINUM] = CreatePlayerTextDraw(playerid, 505.0, 399.0, "Minum");
@@ -80,6 +81,13 @@ stock Needs_DestroyTextDraws(playerid)
 // Needs_UpdateTextDraws: menggambar ulang isi bar sesuai nilai saat ini
 stock Needs_UpdateTextDraws(playerid)
 {
+    if (UI_IsCef(playerid))
+    {
+        return UI_HudNeeds(playerid,
+            Society_PlayerData[playerid][sPHunger],
+            Society_PlayerData[playerid][sPThirst],
+            Society_PlayerData[playerid][sPStress]);
+    }
     if (!pNeedsTDCreated[playerid]) return 0;
     new str[48];
     Needs_BuildBar("Makan", Society_PlayerData[playerid][sPHunger], false, str, sizeof(str));
@@ -93,6 +101,7 @@ stock Needs_UpdateTextDraws(playerid)
 
 stock Needs_Show(playerid)
 {
+    if (UI_IsCef(playerid)) return Needs_UpdateTextDraws(playerid); // HUD HTML
     Needs_CreateTextDraws(playerid);
     Needs_UpdateTextDraws(playerid);
     for (new i = 0; i < 3; i++)

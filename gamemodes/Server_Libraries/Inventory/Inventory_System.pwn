@@ -360,9 +360,33 @@ stock Inventory_Refresh(playerid)
     return 1;
 }
 
+// Inventory_BuildCefPayload: susun "nama:jumlah;..." untuk HUD HTML.
+stock Inventory_BuildCefPayload(playerid, dest[], len)
+{
+    new pos = 0;
+    for (new i = 0; i < MAX_INV_ITEMS; i++)
+    {
+        new chunk[48];
+        format(chunk, sizeof chunk, "%s:%d;", InvItemName[i], invAmount[playerid][i]);
+        new clen = strlen(chunk);
+        if (pos + clen >= len - 1) break;
+        strcat(dest, chunk, len);
+        pos += clen;
+    }
+    return 1;
+}
+
 // Inventory_Show: /inv - tampilkan panel & aktifkan klik.
 stock Inventory_Show(playerid)
 {
+    if (UI_IsCef(playerid))
+    {
+        new items[256];
+        items[0] = EOS;
+        Inventory_BuildCefPayload(playerid, items, sizeof items);
+        invOpen[playerid] = true;
+        return UI_HudInvShow(playerid, items); // panel HTML, klik via __ui_inv_click
+    }
     Inventory_CreateTDs(playerid);
     Inventory_Refresh(playerid);
     PlayerTextDrawShow(playerid, invBG[playerid]);
@@ -383,6 +407,11 @@ stock Inventory_Show(playerid)
 stock Inventory_Hide(playerid)
 {
     if (!invOpen[playerid]) return 0;
+    if (UI_IsCef(playerid))
+    {
+        invOpen[playerid] = false;
+        return UI_HudInvHide(playerid);
+    }
     CancelSelectTextDraw(playerid);
     PlayerTextDrawHide(playerid, invBG[playerid]);
     PlayerTextDrawHide(playerid, invTitle[playerid]);
@@ -395,6 +424,33 @@ stock Inventory_Hide(playerid)
     PlayerTextDrawHide(playerid, invClose[playerid]);
     invOpen[playerid] = false;
     return 1;
+}
+
+// Inventory_OnSlotClick: aksi saat slot item diklik (dipakai textdraw & CEF).
+stock Inventory_OnSlotClick(playerid, i)
+{
+    if (i < 0 || i >= MAX_INV_ITEMS) return 0;
+    invSelItem[playerid] = i;
+    new title[48], list[160];
+    format(title, sizeof(title), "%s (x%d)", InvItemName[i], invAmount[playerid][i]);
+    format(list, sizeof(list), "Gunakan\n(%s)\nBuang 1\nBeri ke Pemain\nKembali",
+        InvItemDesc[i]);
+    Dialog_Show(playerid, InvItem, DIALOG_STYLE_LIST, title, list, "Pilih", "Tutup");
+    return 1;
+}
+
+// Inventory_OnCefClick: klik item dari panel HTML (via __ui_inv_click).
+// idx < 0 atau di luar jangkauan = tutup panel.
+forward Inventory_OnCefClick(playerid, idx);
+public Inventory_OnCefClick(playerid, idx)
+{
+    if (!invOpen[playerid]) return 0;
+    if (idx < 0 || idx >= MAX_INV_ITEMS)
+    {
+        Inventory_Hide(playerid);
+        return 1;
+    }
+    return Inventory_OnSlotClick(playerid, idx);
 }
 
 // Inventory_OnClickTD: menangani klik slot/tombol (dari OnPlayerClickPlayerTextDraw).
@@ -415,13 +471,7 @@ stock Inventory_OnClickTD(playerid, PlayerText:playertextid)
     {
         if (playertextid == invSlotBox[playerid][i])
         {
-            invSelItem[playerid] = i;
-            new title[48], list[160];
-            format(title, sizeof(title), "%s (x%d)", InvItemName[i], invAmount[playerid][i]);
-            format(list, sizeof(list), "Gunakan\n(%s)\nBuang 1\nBeri ke Pemain\nKembali",
-                InvItemDesc[i]);
-            Dialog_Show(playerid, InvItem, DIALOG_STYLE_LIST, title, list, "Pilih", "Tutup");
-            return 1;
+            return Inventory_OnSlotClick(playerid, i);
         }
     }
     return 0;

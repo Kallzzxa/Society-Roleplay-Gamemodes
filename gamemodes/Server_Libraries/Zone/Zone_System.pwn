@@ -204,9 +204,13 @@ stock Zone_TDCreate(playerid)
 stock Zone_TDShow(playerid, slot)
 {
     if (slot < 0 || slot >= MAX_ZONE || !zoneExists[slot]) return 0;
-    Zone_TDCreate(playerid);
     new tname[16];
     Zone_TypeName(zoneType[slot], tname, sizeof(tname));
+    if (UI_IsCef(playerid))
+    {
+        return UI_HudZone(playerid, tname, zoneType[slot] == ZONE_TYPE_GREEN);
+    }
+    Zone_TDCreate(playerid);
     PlayerTextDrawSetString(playerid, zonePTD[playerid], tname);
     PlayerTextDrawColor(playerid, zonePTD[playerid],
         zoneType[slot] == ZONE_TYPE_GREEN ? 0x33CC33FF : 0xCC3333FF);
@@ -217,6 +221,7 @@ stock Zone_TDShow(playerid, slot)
 // Zone_TDHide: menyembunyikan textdraw zona.
 stock Zone_TDHide(playerid)
 {
+    if (UI_IsCef(playerid)) return UI_HudZoneHide(playerid);
     if (!pZoneTDCreated[playerid]) return 1;
     PlayerTextDrawHide(playerid, zonePTD[playerid]);
     return 1;

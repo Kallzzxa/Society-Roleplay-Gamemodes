@@ -36,6 +36,10 @@
 
 #include <a_samp>
 #include <a_mysql>
+#include <string>
+#include <Pawn.RakNet>
+#include <MobileCEF>
+#include "Server_Libraries/UI/UI_Cef.pwn"
 #include <easyDialog>
 #include "Server_Libraries/Utils/Utils_Color.pwn"
 #include "Server_Libraries/Utils/Utils_Enum.pwn"
@@ -335,6 +339,8 @@ public OnGameModeInit()
         SetGameModeText("DB ERROR");
         return 1;
     }
+    CefSetPacketId(252); // paket RakNet CEF untuk SA-MP Mobile Launcher
+    UI_Init(); // daftarkan callback event CEF (dialog/inventory)
     SetTimer("AutoSave", 600000, true); // autosave tiap 10 menit
     SetTimer("NeedsTick", 60000, true); // kebutuhan (makan/minum/stress) tiap 1 menit
     SetTimer("BusinessPayday", 3600000, true); // profit bisnis tiap 1 jam
@@ -370,6 +376,7 @@ public OnGameModeExit()
 public OnPlayerConnect(playerid)
 {
     ResetPlayerVars(playerid);
+    UI_OnPlayerConnect(playerid); // deteksi mobile launcher + inisiasi CEF
     Faction_OnConnect(playerid); // reset data sementara fraksi
     Family_OnConnect(playerid); // reset data sementara keluarga
     Zone_OnConnect(playerid);   // reset data sementara zona
@@ -390,6 +397,7 @@ public OnPlayerConnect(playerid)
 
 public OnPlayerDisconnect(playerid, reason)
 {
+    UI_OnPlayerDisconnect(playerid); // reset status CEF
     if (Society_PlayerData[playerid][sPLogged] && Society_PlayerData[playerid][sPCharID] > 0)
     {
         SaveCharacter(playerid);
@@ -412,6 +420,40 @@ public OnPlayerDisconnect(playerid, reason)
     Zone_OnDisconnect(playerid); // hapus textdraw zona
     Dealer_OnDisconnect(playerid); // hapus kendaraan test drive
     ResetPlayerVars(playerid);
+    return 1;
+}
+
+//================================================================
+// CEF/WEBVIEW (SA-MP Mobile Launcher)
+//================================================================
+
+// OnCefBrowserInit: WebView client selesai dibuat. Sinkronkan UI HTML
+// (scriptfiles/cef/) ke cache perangkat pemain.
+forward OnCefBrowserInit(playerid, success, errorcode);
+public OnCefBrowserInit(playerid, success, errorcode)
+{
+    if (success)
+    {
+        CefSyncUI(playerid);
+    }
+    return 1;
+}
+
+// OnCefUIReady: UI HTML sudah tampil di perangkat. Mulai sekarang semua
+// dialog & textdraw pemain ini dirender via WebView (lihat UI_Cef.pwn).
+forward OnCefUIReady(playerid);
+public OnCefUIReady(playerid)
+{
+    // Sembunyikan dulu textdraw native yang mungkin sudah tampil selagi
+    // WebView disiapkan (masih mode biasa saat fungsi-fungsi ini dipanggil).
+    Needs_Hide(playerid);
+    Vehicle_TDHide(playerid);
+    Zone_TDHide(playerid);
+    Inventory_Hide(playerid);
+    // Aktifkan mode CEF + tampilkan overlay transparan untuk HUD.
+    UI_SetCefActive(playerid, true);
+    CefShowBrowser(playerid);
+    Needs_UpdateTextDraws(playerid); // kirim nilai awal (dialihkan ke CEF)
     return 1;
 }
 

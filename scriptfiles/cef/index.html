@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Society RP - CEF UI</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+    background: transparent; pointer-events: none;
+    font-family: Roboto, Arial, sans-serif; color: #f2f4fa;
+    user-select: none; -webkit-user-select: none;
+  }
+  :root { --gold: #f0b429; --card: rgba(18, 22, 32, 0.96); --line: rgba(255,255,255,0.08); }
+
+  /* ============ HUD: needs (kanan bawah) ============ */
+  #hud-needs {
+    position: fixed; right: 14px; bottom: 120px; width: 150px;
+    display: none; flex-direction: column; gap: 6px;
+    background: rgba(10, 13, 20, 0.62); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 12px;
+  }
+  #hud-needs.show { display: flex; }
+  .need-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+  .need-row .lbl { width: 44px; color: #aeb6c6; }
+  .need-row .bar { flex: 1; height: 7px; border-radius: 4px; background: rgba(255,255,255,0.12); overflow: hidden; }
+  .need-row .fill { height: 100%; border-radius: 4px; transition: width .3s; }
+  .need-row .val { width: 26px; text-align: right; color: #dfe5f0; }
+
+  /* ============ HUD: zona (atas tengah) ============ */
+  #hud-zone {
+    position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+    display: none; padding: 7px 22px; border-radius: 20px;
+    font-size: 15px; font-weight: bold; letter-spacing: 2px;
+    background: rgba(10, 13, 20, 0.66); border: 1px solid var(--line);
+  }
+  #hud-zone.show { display: block; }
+  #hud-zone.green { color: #51d651; border-color: rgba(81,214,81,.4); }
+  #hud-zone.red { color: #ff5b5b; border-color: rgba(255,91,91,.4); }
+
+  /* ============ HUD: kendaraan (kanan bawah, di atas needs) ============ */
+  #hud-vehicle {
+    position: fixed; right: 14px; bottom: 218px; width: 190px; display: none;
+    background: rgba(10, 13, 20, 0.62); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 12px; font-size: 12px;
+  }
+  #hud-vehicle.show { display: block; }
+  #hud-vehicle .plate { font-weight: bold; color: var(--gold); font-size: 13px; }
+  #hud-vehicle .row { color: #cfd6e4; margin-top: 3px; }
+  #hud-vehicle .fuelbar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); margin-top: 6px; overflow: hidden; }
+  #hud-vehicle .fuelfill { height: 100%; background: var(--gold); border-radius: 3px; }
+
+  /* ============ Dialog ============ */
+  #dlg-overlay {
+    position: fixed; inset: 0; display: none;
+    background: rgba(0, 0, 0, 0.55);
+    align-items: center; justify-content: center;
+    pointer-events: auto;
+  }
+  #dlg-overlay.show { display: flex; }
+  #dlg-card {
+    width: min(440px, 92vw); max-height: 84vh; display: flex; flex-direction: column;
+    background: var(--card); border: 1px solid rgba(240,180,41,.25);
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 18px 60px rgba(0,0,0,.6);
+  }
+  #dlg-head {
+    padding: 14px 18px; font-size: 17px; font-weight: bold; color: var(--gold);
+    border-bottom: 1px solid var(--line); letter-spacing: .5px;
+  }
+  #dlg-body { padding: 14px 18px; font-size: 14px; line-height: 1.55; overflow-y: auto; color: #e6eaf2; }
+  #dlg-input {
+    width: 100%; margin-top: 10px; padding: 11px 12px; font-size: 15px;
+    background: rgba(255,255,255,.07); border: 1px solid var(--line);
+    border-radius: 8px; color: #fff; outline: none; pointer-events: auto;
+  }
+  #dlg-input:focus { border-color: var(--gold); }
+  #dlg-list { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; max-height: 40vh; overflow-y: auto; }
+  .dlg-item {
+    padding: 10px 12px; border-radius: 8px; font-size: 14px; cursor: pointer;
+    background: rgba(255,255,255,.04); border: 1px solid transparent; pointer-events: auto;
+  }
+  .dlg-item.sel { background: rgba(240,180,41,.16); border-color: var(--gold); }
+  .dlg-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .dlg-tbl th { color: var(--gold); text-align: left; padding: 8px; border-bottom: 1px solid var(--line); }
+  .dlg-tbl td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,.04); }
+  .dlg-tbl tr.row { cursor: pointer; pointer-events: auto; }
+  .dlg-tbl tr.row.sel td { background: rgba(240,180,41,.14); }
+  #dlg-foot { display: flex; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--line); }
+  .dlg-btn {
+    flex: 1; padding: 12px; font-size: 15px; font-weight: bold; border: none;
+    border-radius: 9px; cursor: pointer; pointer-events: auto;
+  }
+  .dlg-btn.ok { background: var(--gold); color: #14181f; }
+  .dlg-btn.cancel { background: rgba(255,255,255,.1); color: #e6eaf2; }
+
+  /* ============ Inventory panel ============ */
+  #inv-overlay {
+    position: fixed; inset: 0; display: none;
+    background: rgba(0,0,0,.5); align-items: center; justify-content: center; pointer-events: auto;
+  }
+  #inv-overlay.show { display: flex; }
+  #inv-card {
+    width: min(380px, 92vw); background: var(--card);
+    border: 1px solid rgba(240,180,41,.25); border-radius: 14px; overflow: hidden;
+  }
+  #inv-head { padding: 13px 18px; font-weight: bold; color: var(--gold); font-size: 16px;
+    border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+  #inv-close { cursor: pointer; font-size: 20px; color: #aeb6c6; pointer-events: auto; padding: 0 4px; }
+  #inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 16px; }
+  .inv-item {
+    background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px; cursor: pointer; pointer-events: auto; text-align: center;
+  }
+  .inv-item:active { background: rgba(240,180,41,.18); }
+  .inv-item .nm { font-size: 14px; font-weight: bold; }
+  .inv-item .amt { font-size: 12px; color: var(--gold); margin-top: 4px; }
+  .inv-item.empty { opacity: .45; }
+</style>
+</head>
+<body>
+
+<div id="hud-zone"></div>
+
+<div id="hud-vehicle">
+  <div class="plate" id="veh-plate"></div>
+  <div class="row" id="veh-info"></div>
+  <div class="fuelbar"><div class="fuelfill" id="veh-fuel"></div></div>
+</div>
+
+<div id="hud-needs">
+  <div class="need-row"><span class="lbl">Makan</span><div class="bar"><div class="fill" id="nd-makan"></div></div><span class="val" id="nd-makan-v"></span></div>
+  <div class="need-row"><span class="lbl">Minum</span><div class="bar"><div class="fill" id="nd-minum"></div></div><span class="val" id="nd-minum-v"></span></div>
+  <div class="need-row"><span class="lbl">Stress</span><div class="bar"><div class="fill" id="nd-stress"></div></div><span class="val" id="nd-stress-v"></span></div>
+</div>
+
+<div id="dlg-overlay">
+  <div id="dlg-card">
+    <div id="dlg-head"></div>
+    <div id="dlg-body"></div>
+    <div id="dlg-foot"></div>
+  </div>
+</div>
+
+<div id="inv-overlay">
+  <div id="inv-card">
+    <div id="inv-head"><span>Inventory</span><span id="inv-close">&#10005;</span></div>
+    <div id="inv-grid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var SEP = "\x1f";
+  var $ = function (id) { return document.getElementById(id); };
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  // Konversi kode warna SA-MP (~r~ ~g~ ~y~ ~w~ ~n~ ...) ke HTML.
+  function sampFmt(s) {
+    var out = esc(s);
+    var colors = { r: "#ff5b5b", g: "#51d651", y: "#ffe14d", w: "#ffffff",
+                   b: "#5b9dff", p: "#c77dff", l: "#111111", h: "#aeb6c6" };
+    out = out.replace(/~n~/g, "<br>");
+    out = out.replace(/~([rgwybplh])~/g, function (m, c) {
+      return '</span><span style="color:' + (colors[c] || "#fff") + '">';
+    });
+    return "<span>" + out + "</span>";
+  }
+  function clean(s) { return String(s).replace(/\x1f/g, ""); }
+
+  /* ================= Dialog ================= */
+  var dlg = { name: "", style: 0, sel: -1, rows: [] };
+
+  function dlgRespond(response, listitem, inputtext) {
+    try {
+      var payload = [clean(dlg.name), response ? 1 : 0, listitem, clean(inputtext || "")].join(SEP);
+      if (window.cef) { window.cef.emit("__ui_dialog_resp", payload); window.cef.set_focus(false); }
+    } catch (e) {}
+    $("dlg-overlay").classList.remove("show");
+    dlg.sel = -1; dlg.rows = [];
+  }
+  function dlgClose() {
+    try { if (window.cef) window.cef.set_focus(false); } catch (e) {}
+    $("dlg-overlay").classList.remove("show");
+    dlg.sel = -1; dlg.rows = [];
+  }
+
+  function markSel() {
+    var items = document.querySelectorAll("#dlg-list .dlg-item, #dlg-body tr.row");
+    for (var i = 0; i < items.length; i++) {
+      if (i === dlg.sel) items[i].classList.add("sel"); else items[i].classList.remove("sel");
+    }
+  }
+
+  function onDialog(payload) {
+    var p = String(payload).split(SEP);
+    dlg.name = p[0] || ""; dlg.style = parseInt(p[1] || "0", 10);
+    var caption = p[2] || "", info = p[3] || "", b1 = p[4] || "OK", b2 = p[5] || "";
+    dlg.sel = -1; dlg.rows = [];
+    $("dlg-head").textContent = caption;
+    var body = $("dlg-body"); body.innerHTML = "";
+    var foot = $("dlg-foot"); foot.innerHTML = "";
+
+    function addBtn(label, primary, fn) {
+      if (!label) return;
+      var b = document.createElement("button");
+      b.className = "dlg-btn " + (primary ? "ok" : "cancel");
+      b.textContent = label;
+      b.onclick = fn;
+      foot.appendChild(b);
+    }
+
+    if (dlg.style === 1 || dlg.style === 3) {           // input / password
+      var div = document.createElement("div");
+      div.innerHTML = sampFmt(info);
+      var inp = document.createElement("input");
+      inp.id = "dlg-input"; inp.type = (dlg.style === 3) ? "password" : "text";
+      inp.maxLength = 128;
+      div.appendChild(inp); body.appendChild(div);
+      addBtn(b1, true, function () { dlgRespond(1, -1, inp.value); });
+      addBtn(b2, false, function () { dlgRespond(0, -1, ""); });
+      inp.onkeydown = function (e) { if (e.key === "Enter") dlgRespond(1, -1, inp.value); };
+      setTimeout(function () { try { inp.focus(); } catch (e) {} }, 120);
+    } else if (dlg.style === 2 || dlg.style === 4 || dlg.style === 5) { // list / tablist
+      var div = document.createElement("div");
+      var lines = String(info).split("\n");
+      if (dlg.style === 5 && lines.length > 1) {        // tablist headers
+        var tbl = document.createElement("table"); tbl.className = "dlg-tbl";
+        var thead = document.createElement("thead"), hr = document.createElement("tr");
+        lines[0].split("\t").forEach(function (h) {
+          var th = document.createElement("th"); th.innerHTML = sampFmt(h); hr.appendChild(th);
+        });
+        thead.appendChild(hr); tbl.appendChild(thead);
+        var tb = document.createElement("tbody");
+        for (var r = 1; r < lines.length; r++) {
+          (function (idx) {
+            var tr = document.createElement("tr"); tr.className = "row";
+            lines[r].split("\t").forEach(function (c) {
+              var td = document.createElement("td"); td.innerHTML = sampFmt(c); tr.appendChild(td);
+            });
+            tr.onclick = function () { dlg.sel = idx; markSel(); };
+            tr.ondblclick = function () { dlgRespond(1, idx, ""); };
+            tb.appendChild(tr); dlg.rows.push(tr);
+          })(r - 1);
+        }
+        tbl.appendChild(tb); div.appendChild(tbl);
+      } else {
+        var list = document.createElement("div"); list.id = "dlg-list";
+        lines.forEach(function (ln, idx) {
+          if (!ln && dlg.style !== 4) return;
+          var it = document.createElement("div"); it.className = "dlg-item";
+          it.innerHTML = sampFmt(ln || "&nbsp;");
+          it.onclick = function () { dlg.sel = idx; markSel(); };
+          it.ondblclick = function () { dlgRespond(1, idx, ""); };
+          list.appendChild(it); dlg.rows.push(it);
+        });
+        div.appendChild(list);
+      }
+      body.appendChild(div);
+      addBtn(b1, true, function () { dlgRespond(1, dlg.sel, ""); });
+      addBtn(b2, false, function () { dlgRespond(0, -1, ""); });
+    } else {                                            // msgbox
+      var d2 = document.createElement("div");
+      d2.innerHTML = sampFmt(info);
+      body.appendChild(d2);
+      addBtn(b1, true, function () { dlgRespond(1, 0, ""); });
+      addBtn(b2, false, function () { dlgRespond(0, 0, ""); });
+    }
+    $("dlg-overlay").classList.add("show");
+    try { if (window.cef) window.cef.set_focus(true); } catch (e) {}
+  }
+
+  /* ================= HUD ================= */
+  function setBar(id, vid, v, invert) {
+    v = Math.max(0, Math.min(100, v));
+    var el = $(id); el.style.width = v + "%";
+    el.style.background = invert
+      ? (v > 60 ? "#ff5b5b" : v >= 30 ? "#f0b429" : "#51d651")
+      : (v > 60 ? "#51d651" : v >= 30 ? "#f0b429" : "#ff5b5b");
+    $(vid).textContent = v;
+  }
+  function onHud(payload) {
+    var p = String(payload).split(SEP);
+    var sec = p[0];
+    if (sec === "needs") {
+      setBar("nd-makan", "nd-makan-v", parseInt(p[1] || "0", 10), false);
+      setBar("nd-minum", "nd-minum-v", parseInt(p[2] || "0", 10), false);
+      setBar("nd-stress", "nd-stress-v", parseInt(p[3] || "0", 10), true);
+      $("hud-needs").classList.add("show");
+    } else if (sec === "zone") {
+      if (p[1] === "show") {
+        var z = $("hud-zone");
+        z.textContent = p[2] || "";
+        z.className = "show " + (p[3] === "1" ? "red" : "green");
+      } else { $("hud-zone").className = ""; }
+    } else if (sec === "vehicle") {
+      if (p[1] === "show") {
+        $("veh-plate").textContent = "[" + (p[2] || "") + "]";
+        $("veh-info").textContent = (p[3] || "") + " | " + (p[4] || "");
+        $("veh-fuel").style.width = Math.max(0, Math.min(100, parseInt(p[5] || "0", 10))) + "%";
+        $("hud-vehicle").classList.add("show");
+      } else { $("hud-vehicle").classList.remove("show"); }
+    } else if (sec === "inv") {
+      if (p[1] === "show") { renderInv(p[2] || ""); $("inv-overlay").classList.add("show"); }
+      else { $("inv-overlay").classList.remove("show"); }
+    }
+  }
+
+  /* ================= Inventory ================= */
+  function renderInv(data) {
+    var grid = $("inv-grid"); grid.innerHTML = "";
+    var items = String(data).split(";");
+    items.forEach(function (raw, idx) {
+      if (!raw) return;
+      var parts = raw.split(":"), nm = parts[0] || "?", amt = parseInt(parts[1] || "0", 10);
+      var d = document.createElement("div");
+      d.className = "inv-item" + (amt > 0 ? "" : " empty");
+      d.innerHTML = '<div class="nm">' + esc(nm) + '</div><div class="amt">' +
+        (amt > 0 ? "x" + amt : "-") + "</div>";
+      d.onclick = function () {
+        try { if (window.cef) window.cef.emit("__ui_inv_click", String(idx)); } catch (e) {}
+      };
+      grid.appendChild(d);
+    });
+  }
+  $("inv-close").onclick = function () {
+    try { if (window.cef) window.cef.emit("__ui_inv_click", "-1"); } catch (e) {}
+    $("inv-overlay").classList.remove("show");
+  };
+
+  /* ================= Wire up ================= */
+  function ready(fn) {
+    if (window.cef && window.cef.__sampMobile) fn();
+    else setTimeout(function () { ready(fn); }, 60);
+  }
+  ready(function () {
+    window.cef.on("__ui_dialog", onDialog);
+    window.cef.on("__ui_dialog_close", dlgClose);
+    window.cef.on("__ui_hud", onHud);
+  });
+})();
+</script>
+</body>
+</html>

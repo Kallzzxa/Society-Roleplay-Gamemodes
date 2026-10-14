@@ -66,6 +66,13 @@ stock Dialog_Close(playerid) {
 	s_DialogName[playerid]{0} = 0;
 	s_DialogOpened[playerid] = false;
 
+#if defined _UI_CEF_INC_
+	// Society RP: tutup juga dialog HTML bila pemain memakai CEF.
+	if (UI_IsCef(playerid)) {
+		CefSendEvent(playerid, "__ui_dialog_close", "");
+	}
+#endif
+
 	return HidePlayerDialog(playerid);
 }
 
@@ -78,6 +85,13 @@ stock Dialog_Open(playerid, function[], DIALOG_STYLE:style, caption[], info[], b
 	if (!strlen(info)) {
 		return 0;
 	}
+#if defined _UI_CEF_INC_
+	// Society RP: pemain dengan CEF aktif mendapat dialog HTML (WebView),
+	// bukan dialog SA-MP biasa. Semua 90 Dialog_Show otomatis dialihkan.
+	if (UI_IsCef(playerid)) {
+		return UI_CefDialog(playerid, function, _:style, caption, info, button1, button2);
+	}
+#endif
 	if ((args = numargs()) > 7) {
 		while (--args >= 7) {
 			#emit LCTRL 5
