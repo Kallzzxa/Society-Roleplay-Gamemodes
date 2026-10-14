@@ -22,6 +22,7 @@
 //       "zone"    : "show"<US>nama<US>warna | "hide"   (warna: 0 hijau, 1 merah)
 //       "vehicle" : "show"<US>plat<US>nama<US>kunci<US>bensin | "hide"
 //       "inv"     : "show"<US>nama1:jumlah;nama2:jumlah;... | "hide"
+//       "robbery" : "show"<US>nama_titik<US>persen(0-100) | "hide"
 //  Web -> server (cef.emit):
 //    "__ui_dialog_resp" : nama<US>response<US>listitem<US>inputtext
 //    "__ui_inv_click"   : index
@@ -335,6 +336,29 @@ stock UI_HudInvHide(playerid)
     if (!UI_IsCef(playerid)) return 0;
     new payload[32];
     format(payload, sizeof payload, "inv%chide", UI_SEP);
+    CefSendEvent(playerid, "__ui_hud", payload);
+    return 1;
+}
+
+// UI_HudRobbery: progress bar rampok (nama titik + persen 0-100).
+stock UI_HudRobbery(playerid, const name[], percent)
+{
+    if (!UI_IsCef(playerid)) return 0;
+    new payload[128], nm[64];
+    UI_StripSep(name, nm, sizeof nm);
+    if (percent < 0) percent = 0;
+    if (percent > 100) percent = 100;
+    format(payload, sizeof payload, "robbery%cshow%c%s%c%d", UI_SEP,
+        UI_SEP, nm, UI_SEP, percent);
+    CefSendEvent(playerid, "__ui_hud", payload);
+    return 1;
+}
+
+stock UI_HudRobberyHide(playerid)
+{
+    if (!UI_IsCef(playerid)) return 0;
+    new payload[32];
+    format(payload, sizeof payload, "robbery%chide", UI_SEP);
     CefSendEvent(playerid, "__ui_hud", payload);
     return 1;
 }

@@ -222,9 +222,19 @@ Roleplay, Ravage Roleplay, dll). Gaya tetap: oldschool-modern, textdraw,
 Bahasa Indonesia, easydialog, compile 0 error, commit+push per item.
 
 ### Kriminal (badside)
-- [ ] **Sistem Rampok**: rampok bank/toko/ATM. `/rob` di titik rampok →
-      progress bar textdraw (waktu berjalan), alarm ke polisi online, cooldown
-      per titik, hasil uang kotor. Tabel `robbery_spots`.
+- [x] **Sistem Rampok** (selesai 2026-10-14): tabel `robbery_spots`
+      (id, name, type [0=Bank/1=Toko/2=ATM], reward_min/max, duration,
+      cooldown, last_robbed, pos_x/y/z) + kolom baru
+      `characters.dirty_money`. Admin: `/createrobspot [nama] [tipe]`
+      (level 3+) → pickup + label 3D. Pemain: `/rob` di dekat titik →
+      progress bar textdraw oldschool (CEF: HUD progress HTML), alarm
+      otomatis ke semua fraksi LSPD online, batal bila pergi/mati/naik
+      kendaraan; berhasil → hadiah acak jadi uang kotor (terlihat di
+      /money & /stats > Keuangan, tersimpan di DB), cooldown per titik,
+      pengumuman ke server. `/robspots` (daftar + detail; admin 4+ bisa
+      hapus), `/deleterobspot` (admin 4+, di dekat titik). Modul:
+      `Server_Libraries/Robbery/Robbery_System.pwn` (+ `UI_HudRobbery`
+      di UI_Cef.pwn & HUD di scriptfiles/cef/index.html).
 - [ ] **Black Market**: titik tersembunyi (acak) beli senjata & narkoba.
       `/bm` di dekat titik → dialog daftar barang + harga. Stok terbatas.
 - [ ] **Narkoba**: `/plant` (benih, butuh lahan), tumbuh real-time,

@@ -59,6 +59,7 @@ new pGender[MAX_PLAYERS]; // 0 = Laki-laki, 1 = Perempuan
 new pSkin[MAX_PLAYERS];
 new pMoney[MAX_PLAYERS];
 new pBank[MAX_PLAYERS];
+new pDirtyMoney[MAX_PLAYERS]; // uang kotor hasil rampok (characters.dirty_money)
 new pLevel[MAX_PLAYERS];
 new pExp[MAX_PLAYERS];
 new Float:pPosX[MAX_PLAYERS];
@@ -205,6 +206,7 @@ stock ResetPlayerVars(playerid)
     pSkin[playerid] = 0;
     pMoney[playerid] = 0;
     pBank[playerid] = 0;
+    pDirtyMoney[playerid] = 0;
     pLevel[playerid] = 1;
     pExp[playerid] = 0;
     pPosX[playerid] = 1481.0;
@@ -270,6 +272,10 @@ stock ResetPlayerVars(playerid)
 // karena memakai data kepemilikan & nama entitas mereka).
 #include "Server_Libraries/Door/Door_System.pwn"
 
+// Sistem rampok (di-include setelah Faction karena memakai
+// Faction_Broadcast untuk alarm ke LSPD).
+#include "Server_Libraries/Robbery/Robbery_System.pwn"
+
 // SaveCharacter: menyimpan data karakter pemain ke database.
 stock SaveCharacter(playerid)
 {
@@ -282,8 +288,8 @@ stock SaveCharacter(playerid)
     pMoney[playerid] = GetPlayerMoney(playerid);
     new query[512];
     mysql_format(g_SQL, query, sizeof(query),
-        "UPDATE characters SET money = %d, bank = %d, level = %d, exp = %d, pos_x = %f, pos_y = %f, pos_z = %f, interior = %d, vw = %d, health = %f, armour = %f, hunger = %f, thirst = %f, stress = %f, faction_id = %d, faction_rank = %d, family_id = %d, family_rank = %d WHERE id = %d",
-        pMoney[playerid], pBank[playerid], pLevel[playerid], pExp[playerid],
+        "UPDATE characters SET money = %d, bank = %d, dirty_money = %d, level = %d, exp = %d, pos_x = %f, pos_y = %f, pos_z = %f, interior = %d, vw = %d, health = %f, armour = %f, hunger = %f, thirst = %f, stress = %f, faction_id = %d, faction_rank = %d, family_id = %d, family_rank = %d WHERE id = %d",
+        pMoney[playerid], pBank[playerid], pDirtyMoney[playerid], pLevel[playerid], pExp[playerid],
         x, y, z, GetPlayerInterior(playerid), GetPlayerVirtualWorld(playerid),
         hp, ap,
         Society_PlayerData[playerid][sPHunger], Society_PlayerData[playerid][sPThirst], Society_PlayerData[playerid][sPStress],
@@ -352,6 +358,7 @@ public OnGameModeInit()
     SetTimer("BusinessPayday", 3600000, true); // profit bisnis tiap 1 jam
     SetTimer("ZoneTick", 1000, true);       // cek zona tempat pemain (textdraw)
     SetTimer("FuelTick", 30000, true);     // bensin kendaraan berkurang tiap 30 detik
+    SetTimer("RobberyTick", 1000, true);     // progress rampok tiap 1 detik
     Business_LoadAll(); // muat bisnis dinamis dari database
     House_LoadAll();    // muat rumah dinamis dari database
     Vehicle_LoadAll();  // muat kendaraan pribadi dari database
@@ -363,6 +370,7 @@ public OnGameModeInit()
     Dealer_LoadAll();   // muat dealer kendaraan dinamis dari database
     GasStation_LoadAll(); // muat pom bensin dinamis dari database
     Door_LoadAll();       // muat pintu dinamis dari database
+    Robbery_LoadAll();    // muat titik rampok dari database
     print("[SocietyRP] Gamemode dimuat: Society RP v1.0");
     return 1;
 }
@@ -389,6 +397,7 @@ public OnPlayerConnect(playerid)
     Faction_OnConnect(playerid); // reset data sementara fraksi
     Family_OnConnect(playerid); // reset data sementara keluarga
     Zone_OnConnect(playerid);   // reset data sementara zona
+    Robbery_OnConnect(playerid); // reset data sementara rampok
     if (g_SQL == MYSQL_INVALID_HANDLE)
     {
         SendClientMessage(playerid, COLOR_RED, "Database sedang offline. Silakan coba lagi nanti.");
@@ -429,6 +438,7 @@ public OnPlayerDisconnect(playerid, reason)
     Zone_OnDisconnect(playerid); // hapus textdraw zona
     Dealer_OnDisconnect(playerid); // hapus kendaraan test drive
     Door_OnDisconnect(playerid); // batalkan pembuatan pintu yang belum selesai
+    Robbery_OnDisconnect(playerid); // batalkan rampok & hapus textdraw progress
     ResetPlayerVars(playerid);
     return 1;
 }
@@ -778,14 +788,15 @@ Dialog:StatsMenu(playerid, response, listitem, inputtext[])
         }
         case 1: // Keuangan
         {
-            new uang[32], bank[32], total[32];
+            new uang[32], bank[32], total[32], kotor[32];
             pMoney[playerid] = GetPlayerMoney(playerid);
             FormatRupiah(pMoney[playerid], uang, sizeof(uang));
             FormatRupiah(pBank[playerid], bank, sizeof(bank));
             FormatRupiah(pMoney[playerid] + pBank[playerid], total, sizeof(total));
+            FormatRupiah(pDirtyMoney[playerid], kotor, sizeof(kotor));
             format(info, sizeof(info),
-                "Uang Tunai: %s\nTabungan Bank: %s\nTotal Kekayaan: %s",
-                uang, bank, total);
+                "Uang Tunai: %s\nTabungan Bank: %s\nTotal Kekayaan: %s\nUang Kotor (hasil rampok): %s",
+                uang, bank, total, kotor);
             Dialog_Show(playerid, StatsSub, DIALOG_STYLE_MSGBOX, "Keuangan", info, "Kembali", "");
         }
         case 2: // Kebutuhan
@@ -860,9 +871,10 @@ public OnPlayerCommandText(playerid, cmdtext[])
             return 1;
         }
         pMoney[playerid] = GetPlayerMoney(playerid);
-        new uang[32], msg[96];
+        new uang[32], kotor[32], msg[160];
         FormatRupiah(pMoney[playerid], uang, sizeof(uang));
-        format(msg, sizeof(msg), "Uang anda: %s", uang);
+        FormatRupiah(pDirtyMoney[playerid], kotor, sizeof(kotor));
+        format(msg, sizeof(msg), "Uang anda: %s | Uang kotor: %s", uang, kotor);
         SendClientMessage(playerid, COLOR_GREEN, msg);
         return 1;
     }
@@ -932,7 +944,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (strcmp(cmd, "/help", true) == 0)
     {
         Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan",
-            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n/inv - Membuka tas inventory (textdraw)\n/starterpack - Klaim paket warga baru (sekali per karakter)\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\nTekan ENTER (F) di dekat bisnis untuk interaksi\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu (atau tekan ENTER di depan rumah dijual)\nTekan ENTER (F) di depan pintu rumah untuk masuk/keluar\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nFraksi:\n/finfo - Info fraksimu & daftar anggota\n/factions - Daftar semua fraksi di server\n/f [pesan] - Chat khusus anggota fraksi\n/duty - Mulai/selesai duty (seragam & senjata dinas, di markas)\n/finvite [id] - Undang pemain (Wakil Ketua+)\n/fkick [id] - Keluarkan anggota (Wakil Ketua+)\n/fquit - Keluar dari fraksi\n/setrank [id] [rank] - Atur rank anggota (Ketua)\n/fdeposit [jumlah] - Setor ke kas fraksi\n/fwithdraw [jumlah] - Ambil kas fraksi (Ketua)\n\nKeluarga:\n/createfamily [nama] - Dirikan keluarga/gangster (Rp50 juta tunai)\n/faminfo - Info keluargamu & daftar anggota\n/families - Daftar semua keluarga di server\n/fam [pesan] - Chat khusus anggota keluarga\n/famcolor - Ganti warna identitas keluarga (Ketua)\n/faminvite [id] - Undang pemain (Tangan Kanan+)\n/famkick [id] - Keluarkan anggota (Tangan Kanan+)\n/famquit - Keluar dari keluarga\n/setfamrank [id] [rank] - Atur rank anggota (Ketua)\n/famdeposit [jumlah] - Setor ke kas keluarga\n/famwithdraw [jumlah] - Ambil kas keluarga (Ketua)\n\nBengkel:\n/buyworkshop - Membeli bengkel di dekatmu\n/wsinfo - Mengelola bengkelmu (ambil untung, jual)\n/wswithdraw - Mengambil keuntungan bengkel\n/repair - Perbaiki kendaraanmu di bengkel\n/mod - Modifikasi kendaraan (warna, komponen, neon) di bengkel\n\nGarasi Kota:\n/garage - Titip / ambil / transfer kendaraan di garasi terdekat\nTekan ENTER (F) di dekat garasi untuk membuka menu\n/garages - Daftar semua garasi kota\n\nZona:\n/zones - Daftar & detail zona dinamis\n\nDealer Kendaraan:\n/dealer - Showroom dealer terdekat (lihat stok, test drive, beli kendaraan)\n/dealers - Daftar semua dealer di server\n/buydealer - Membeli dealer di dekatmu\n/dealerinfo - Mengelola dealermu (info, ambil komisi, jual)\n/dealerwithdraw - Mengambil komisi penjualan dealer\n/selldealer - Menjual kembali dealermu\n\nPom Bensin:\n/refuel - Isi bensin kendaraan di pom terdekat (jadi sopir)\n/gasstations - Daftar semua pom bensin di server\n/buygasstation - Membeli pom bensin di dekatmu\n/gasinfo - Mengelola pom bensinmu (stok, harga, untung, jual)\n/setfuelprice - Atur harga bensin per liter (pemilik pom)\n/gaswithdraw - Mengambil keuntungan pom bensin\n/sellgasstation - Menjual kembali pom bensinmu\n\nPintu:\n/doors - Daftar semua pintu dinamis\n/doorinfo - Info & kelola pintu terdekat\n/lockdoor - Kunci/buka pintu terdekat (pemilik/admin)\nTekan ENTER (F) di depan pintu untuk masuk/keluar\n\nKetik /helpadmin untuk daftar perintah admin",
+            "Perintah Pemain:\n/stats - Melihat statistik karakter\n/money - Melihat jumlah uang\n/eat - Makan untuk mengisi kebutuhan makan\n/drink - Minum untuk mengisi kebutuhan minum\n/save - Menyimpan data karakter\n/help - Membuka menu ini\n/inv - Membuka tas inventory (textdraw)\n/starterpack - Klaim paket warga baru (sekali per karakter)\n\nBisnis:\n/buybusiness - Membeli bisnis di dekatmu\n/bizinfo - Mengelola bisnismu (ambil untung, kunci, jual)\n/bizwithdraw - Mengambil keuntungan bisnis\n/sellbusiness - Menjual kembali bisnismu\nTekan ENTER (F) di dekat bisnis untuk interaksi\n\nRumah:\n/buyhouse - Membeli rumah di dekatmu (atau tekan ENTER di depan rumah dijual)\nTekan ENTER (F) di depan pintu rumah untuk masuk/keluar\n/houseinfo - Mengelola rumahmu (kunci/buka, jual)\n/lockhouse - Mengunci/membuka rumahmu\n/sellhouse - Menjual kembali rumahmu\n\nKendaraan:\n/buyvehicle - Membeli kendaraan pribadi\n/vlist - Melihat & mengelola kendaraanmu\n/vpark - Menyimpan posisi parkir kendaraan\n/vlock - Mengunci/membuka kendaraanmu\n\nFraksi:\n/finfo - Info fraksimu & daftar anggota\n/factions - Daftar semua fraksi di server\n/f [pesan] - Chat khusus anggota fraksi\n/duty - Mulai/selesai duty (seragam & senjata dinas, di markas)\n/finvite [id] - Undang pemain (Wakil Ketua+)\n/fkick [id] - Keluarkan anggota (Wakil Ketua+)\n/fquit - Keluar dari fraksi\n/setrank [id] [rank] - Atur rank anggota (Ketua)\n/fdeposit [jumlah] - Setor ke kas fraksi\n/fwithdraw [jumlah] - Ambil kas fraksi (Ketua)\n\nKeluarga:\n/createfamily [nama] - Dirikan keluarga/gangster (Rp50 juta tunai)\n/faminfo - Info keluargamu & daftar anggota\n/families - Daftar semua keluarga di server\n/fam [pesan] - Chat khusus anggota keluarga\n/famcolor - Ganti warna identitas keluarga (Ketua)\n/faminvite [id] - Undang pemain (Tangan Kanan+)\n/famkick [id] - Keluarkan anggota (Tangan Kanan+)\n/famquit - Keluar dari keluarga\n/setfamrank [id] [rank] - Atur rank anggota (Ketua)\n/famdeposit [jumlah] - Setor ke kas keluarga\n/famwithdraw [jumlah] - Ambil kas keluarga (Ketua)\n\nBengkel:\n/buyworkshop - Membeli bengkel di dekatmu\n/wsinfo - Mengelola bengkelmu (ambil untung, jual)\n/wswithdraw - Mengambil keuntungan bengkel\n/repair - Perbaiki kendaraanmu di bengkel\n/mod - Modifikasi kendaraan (warna, komponen, neon) di bengkel\n\nGarasi Kota:\n/garage - Titip / ambil / transfer kendaraan di garasi terdekat\nTekan ENTER (F) di dekat garasi untuk membuka menu\n/garages - Daftar semua garasi kota\n\nZona:\n/zones - Daftar & detail zona dinamis\n\nDealer Kendaraan:\n/dealer - Showroom dealer terdekat (lihat stok, test drive, beli kendaraan)\n/dealers - Daftar semua dealer di server\n/buydealer - Membeli dealer di dekatmu\n/dealerinfo - Mengelola dealermu (info, ambil komisi, jual)\n/dealerwithdraw - Mengambil komisi penjualan dealer\n/selldealer - Menjual kembali dealermu\n\nPom Bensin:\n/refuel - Isi bensin kendaraan di pom terdekat (jadi sopir)\n/gasstations - Daftar semua pom bensin di server\n/buygasstation - Membeli pom bensin di dekatmu\n/gasinfo - Mengelola pom bensinmu (stok, harga, untung, jual)\n/setfuelprice - Atur harga bensin per liter (pemilik pom)\n/gaswithdraw - Mengambil keuntungan pom bensin\n/sellgasstation - Menjual kembali pom bensinmu\n\nPintu:\n/doors - Daftar semua pintu dinamis\n/doorinfo - Info & kelola pintu terdekat\n/lockdoor - Kunci/buka pintu terdekat (pemilik/admin)\nTekan ENTER (F) di depan pintu untuk masuk/keluar\n\nKriminal:\n/rob - Rampok titik rampok terdekat (hasil uang kotor)\n/robspots - Daftar & detail titik rampok\n\nKetik /helpadmin untuk daftar perintah admin",
             "Tutup", "");
         return 1;
     }
@@ -947,6 +959,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         strcat(helptxt, "/fsetleader [id] - (Admin 4+) Tunjuk ketua fraksi\n/famsetleader [id] - (Admin 4+) Tunjuk ketua keluarga\n/createws [nama] [harga] - (Admin 3+) Buat bengkel dinamis\n/creategarage [nama] [biaya] - (Admin 3+) Buat garasi kota\n", sizeof(helptxt));
         strcat(helptxt, "/createzone [nama] [tipe] - (Admin 3+) Buat zona (0=Greenzone, 1=Zona Bahaya)\n/deletezone - (Admin 4+) Hapus zona\n/createdealer [nama] [tipe] [harga] - (Admin 3+) Buat dealer kendaraan\n/creategasstation [nama] [harga] - (Admin 3+) Buat pom bensin\n", sizeof(helptxt));
         strcat(helptxt, "/createdoor [tipe] [id_pemilik] [nama] - (Admin 3+/pemilik) Buat pintu dinamis (0=Rumah, 1=Bisnis, 2=Fraksi)\n/deletedoor - (Admin 4+/pemilik) Hapus pintu dinamis\n", sizeof(helptxt));
+        strcat(helptxt, "/createrobspot [nama] [tipe] - (Admin 3+) Buat titik rampok (0=Bank, 1=Toko, 2=ATM)\n/deleterobspot - (Admin 4+) Hapus titik rampok terdekat\n", sizeof(helptxt));
         strcat(helptxt, "/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server", sizeof(helptxt));
         Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan Admin", helptxt, "Tutup", "");
         return 1;
@@ -2213,6 +2226,34 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
+    // /createrobspot [nama] [tipe] - (admin 3+) buat titik rampok dinamis
+    if (strcmp(cmd, "/createrobspot", true) == 0)
+    {
+        Rob_CmdCreate(playerid, cmdtext, idx);
+        return 1;
+    }
+
+    // /rob - mulai merampok titik rampok terdekat
+    if (strcmp(cmd, "/rob", true) == 0)
+    {
+        Rob_CmdRob(playerid);
+        return 1;
+    }
+
+    // /robspots - daftar & detail titik rampok
+    if (strcmp(cmd, "/robspots", true) == 0)
+    {
+        Rob_CmdList(playerid);
+        return 1;
+    }
+
+    // /deleterobspot - (admin 4+) hapus titik rampok terdekat
+    if (strcmp(cmd, "/deleterobspot", true) == 0)
+    {
+        Rob_CmdDelete(playerid);
+        return 1;
+    }
+
     SendClientMessage(playerid, COLOR_GREY, "Perintah tidak dikenal. Ketik /help.");
     return 1;
 }
@@ -2451,6 +2492,7 @@ public OnCharLoaded(playerid)
     cache_get_value_name_int(0, "skin", tmp);    pSkin[playerid] = tmp;
     cache_get_value_name_int(0, "money", tmp);   pMoney[playerid] = tmp;
     cache_get_value_name_int(0, "bank", tmp);    pBank[playerid] = tmp;
+    cache_get_value_name_int(0, "dirty_money", tmp); pDirtyMoney[playerid] = tmp;
     cache_get_value_name_int(0, "level", tmp);   pLevel[playerid] = tmp;
     cache_get_value_name_int(0, "exp", tmp);     pExp[playerid] = tmp;
     cache_get_value_name_float(0, "pos_x", ftmp);  pPosX[playerid] = ftmp;

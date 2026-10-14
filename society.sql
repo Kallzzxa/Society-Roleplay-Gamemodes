@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS `characters` (
     `skin` INT DEFAULT 0,
     `money` INT DEFAULT 500000,
     `bank` INT DEFAULT 0,
+    `dirty_money` INT DEFAULT 0,
     `level` INT DEFAULT 1,
     `exp` INT DEFAULT 0,
     `pos_x` FLOAT DEFAULT 1481.0,
@@ -57,6 +58,7 @@ CREATE TABLE IF NOT EXISTS `characters` (
 -- ALTER TABLE `characters` ADD COLUMN `faction_rank` TINYINT DEFAULT 0;
 -- ALTER TABLE `characters` ADD COLUMN `family_id` INT DEFAULT 0;
 -- ALTER TABLE `characters` ADD COLUMN `family_rank` TINYINT DEFAULT 0;
+-- ALTER TABLE `characters` ADD COLUMN `dirty_money` INT DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS `businesses` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -292,3 +294,21 @@ CREATE TABLE IF NOT EXISTS `doors` (
 
 -- Untuk database yang sudah ada (dibuat sebelum update pintu dinamis), jalankan:
 -- (cukup import ulang blok CREATE TABLE `doors` di atas)
+
+CREATE TABLE IF NOT EXISTS `robbery_spots` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(32) NOT NULL,
+    `type` TINYINT DEFAULT 0,
+    `reward_min` INT DEFAULT 500000,
+    `reward_max` INT DEFAULT 1500000,
+    `duration` INT DEFAULT 45,
+    `cooldown` INT DEFAULT 3600,
+    `last_robbed` INT DEFAULT 0,
+    `pos_x` FLOAT NOT NULL,
+    `pos_y` FLOAT NOT NULL,
+    `pos_z` FLOAT NOT NULL,
+    INDEX `idx_rob_type` (`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update sistem rampok), jalankan:
+-- (cukup import ulang blok CREATE TABLE `robbery_spots` di atas)

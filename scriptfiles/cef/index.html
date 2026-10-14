@@ -39,6 +39,22 @@
   #hud-zone.green { color: #51d651; border-color: rgba(81,214,81,.4); }
   #hud-zone.red { color: #ff5b5b; border-color: rgba(255,91,91,.4); }
 
+  /* ============ HUD: progress rampok (tengah bawah) ============ */
+  #hud-robbery {
+    position: fixed; bottom: 22%; left: 50%; transform: translateX(-50%);
+    display: none; width: min(70vw, 340px); padding: 10px 14px;
+    background: rgba(10, 13, 20, 0.78); border: 1px solid rgba(240,180,41,.5);
+    border-radius: 8px; text-align: center;
+  }
+  #hud-robbery.show { display: block; }
+  #hud-robbery .lbl { color: var(--gold); font-size: 13px; font-weight: bold;
+    letter-spacing: 1px; margin-bottom: 6px; }
+  #hud-robbery .bar { height: 10px; border-radius: 5px;
+    background: rgba(255,255,255,.12); overflow: hidden; }
+  #hud-robbery .fill { height: 100%; width: 0%; background: #ff5b5b;
+    border-radius: 5px; transition: width .3s; }
+  #hud-robbery .pct { color: #cfd6e4; font-size: 12px; margin-top: 4px; }
+
   /* ============ HUD: kendaraan (kanan bawah, di atas needs) ============ */
   #hud-vehicle {
     position: fixed; right: 14px; bottom: 218px; width: 190px; display: none;
@@ -122,6 +138,12 @@
 <body>
 
 <div id="hud-zone"></div>
+
+<div id="hud-robbery">
+  <div class="lbl" id="rob-name">MERAMPOK</div>
+  <div class="bar"><div class="fill" id="rob-fill"></div></div>
+  <div class="pct" id="rob-pct">0%</div>
+</div>
 
 <div id="hud-vehicle">
   <div class="plate" id="veh-plate"></div>
@@ -307,6 +329,14 @@
     } else if (sec === "inv") {
       if (p[1] === "show") { renderInv(p[2] || ""); $("inv-overlay").classList.add("show"); }
       else { $("inv-overlay").classList.remove("show"); }
+    } else if (sec === "robbery") {
+      if (p[1] === "show") {
+        $("rob-name").textContent = "MERAMPOK " + (p[2] || "").toUpperCase();
+        var pct = Math.max(0, Math.min(100, parseInt(p[3] || "0", 10)));
+        $("rob-fill").style.width = pct + "%";
+        $("rob-pct").textContent = pct + "%";
+        $("hud-robbery").classList.add("show");
+      } else { $("hud-robbery").classList.remove("show"); }
     }
   }
 
