@@ -342,21 +342,19 @@ stock House_BuyConfirm(playerid, slot)
     if (slot < 0 || slot >= MAX_HOUSE || !hExists[slot]) return 0;
     if (hOwnerCharID[slot] > 0) return 0;
     pHouseMenuSlot[playerid] = slot;
-    new harga[32], msg[320], opts[2][64];
+    new harga[32], msg[320];
     FormatRupiah(hPrice[slot], harga, sizeof(harga));
     format(msg, sizeof(msg),
-        "Yakin ingin membeli rumah ini?~n~~n~Location: %s~n~Type: %s~n~Harga: %s",
+        "Yakin ingin membeli rumah ini?\n\nLocation: %s\nType: %s\nHarga: %s",
         hLocation[slot], House_TypeName[hType[slot]], harga);
-    format(opts[0], 64, "Beli");
-    format(opts[1], 64, "Batal");
-    UI_ShowMenu(playerid, "dialog_HouseBuyConfirm", "BELI RUMAH", msg, opts, 2);
+    Dialog_Show(playerid, HouseBuyConfirm, DIALOG_STYLE_MSGBOX, "Beli Rumah", msg, "Beli", "Batal");
     return 1;
 }
 
 // Dialog:HouseBuyConfirm - konfirmasi pembelian rumah via tombol ENTER.
 Dialog:HouseBuyConfirm(playerid, response, listitem, inputtext[])
 {
-    if (!response || listitem != 0) return 1; // "Batal" (opsi 1) atau ESC
+    if (!response) return 1;
     new slot = pHouseMenuSlot[playerid];
     if (slot < 0 || slot >= MAX_HOUSE || !hExists[slot]) return 1;
     House_Buy(playerid, slot);
@@ -418,14 +416,12 @@ Dialog:HouseInfo(playerid, response, listitem, inputtext[])
     }
     else if (listitem == 1)
     {
-        new harga[32], msg[256], opts[2][64];
+        new harga[32], msg[256];
         FormatRupiah((hPrice[slot] * HOUSE_SELL_RATE) / 100, harga, sizeof(harga));
         format(msg, sizeof(msg),
-            "Yakin ingin menjual rumah #%d?~n~~n~Kamu akan menerima %s (%d%% dari harga beli).",
+            "Yakin ingin menjual rumah #%d?\n\nKamu akan menerima %s (%d%% dari harga beli).",
             hDBID[slot], harga, HOUSE_SELL_RATE);
-        format(opts[0], 64, "Jual");
-        format(opts[1], 64, "Batal");
-        UI_ShowMenu(playerid, "dialog_HouseSellConfirm", "JUAL RUMAH", msg, opts, 2);
+        Dialog_Show(playerid, HouseSellConfirm, DIALOG_STYLE_MSGBOX, "Jual Rumah", msg, "Jual", "Batal");
     }
     return 1;
 }
@@ -433,7 +429,7 @@ Dialog:HouseInfo(playerid, response, listitem, inputtext[])
 // Dialog:HouseSellConfirm - konfirmasi sebelum rumah dijual kembali.
 Dialog:HouseSellConfirm(playerid, response, listitem, inputtext[])
 {
-    if (!response || listitem != 0) return 1; // "Batal" (opsi 1) atau ESC
+    if (!response) return 1;
     new slot = pHouseMenuSlot[playerid];
     if (slot < 0 || slot >= MAX_HOUSE || !hExists[slot]) return 1;
     if (hOwnerCharID[slot] != Society_PlayerData[playerid][sPCharID])

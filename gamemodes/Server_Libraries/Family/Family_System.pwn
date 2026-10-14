@@ -623,14 +623,16 @@ stock Family_ShowColorPicker(playerid)
         return 0;
     }
     pFamColorFor[playerid] = slot;
-    new opts[FAMILY_COLORS][64], embed[10];
+    new list[512], line[48], embed[10];
+    list[0] = EOS;
     for (new i = 0; i < FAMILY_COLORS; i++)
     {
         Family_Embed(Family_ColorRGB[i], embed, sizeof(embed));
-        format(opts[i], 64, "%s%s{FFFFFF}", embed, Family_ColorName[i]);
+        format(line, sizeof(line), "%s%s{FFFFFF}\n", embed, Family_ColorName[i]);
+        if ((strlen(list) + strlen(line)) < sizeof(list)) strcat(list, line);
     }
-    UI_ShowMenu(playerid, "dialog_FamilyColor", "WARNA KELUARGA",
-        "Pilih warna identitas keluargamu:", opts, FAMILY_COLORS);
+    Dialog_Show(playerid, FamilyColor, DIALOG_STYLE_LIST,
+        "Warna Keluarga", list, "Pilih", "Batal");
     return 1;
 }
 

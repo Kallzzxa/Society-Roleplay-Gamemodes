@@ -384,10 +384,9 @@ stock Dealer_ShowForSale(playerid, slot)
     Dealer_TypeName(dType[slot], tipe, sizeof(tipe));
     FormatRupiah(dPrice[slot], harga, sizeof(harga));
     format(msg, sizeof(msg),
-        "Dealer ini belum ada pemiliknya.~n~~n~Nama: %s~n~Tipe: %s (%d kendaraan)~n~Harga Beli: %s~n~~n~Ketik /buydealer untuk membeli dealer ini.",
+        "Dealer ini belum ada pemiliknya.\n\nNama: %s\nTipe: %s (%d kendaraan)\nHarga Beli: %s\n\nKetik /buydealer untuk membeli dealer ini.",
         dName[slot], tipe, g_DealerStockCount[dType[slot]], harga);
-    new opts[1][64] = {"Tutup"};
-    UI_ShowMenu(playerid, "dialog_DealerForSale", "DEALER DIJUAL", msg, opts, 1);
+    Dialog_Show(playerid, DealerForSale, DIALOG_STYLE_MSGBOX, "Dealer Dijual", msg, "Tutup", "");
     return 1;
 }
 
@@ -563,14 +562,12 @@ Dialog:DealerDetail(playerid, response, listitem, inputtext[])
     else if (listitem == 1)
     {
         new catidx = pDealerStock[playerid];
-        new harga[32], msg[320], opts[2][64];
+        new harga[32], msg[320];
         FormatRupiah(g_VehCatPrice[catidx], harga, sizeof(harga));
         format(msg, sizeof(msg),
-            "Kamu akan membeli:~n~~n~%s~n~Harga: %s~n~~n~Kendaraan ini menjadi kendaraan pribadimu (maks 2 per karakter).~n~Ketik /vlist untuk mengelolanya.",
+            "Kamu akan membeli:\n\n%s\nHarga: %s\n\nKendaraan ini menjadi kendaraan pribadimu (maks 2 per karakter).\nKetik /vlist untuk mengelolanya.",
             g_VehCatName[catidx], harga);
-        format(opts[0], 64, "Beli");
-        format(opts[1], 64, "Batal");
-        UI_ShowMenu(playerid, "dialog_DealerBuyConfirm", "BELI KENDARAAN", msg, opts, 2);
+        Dialog_Show(playerid, DealerBuyConfirm, DIALOG_STYLE_MSGBOX, "Beli Kendaraan", msg, "Beli", "Batal");
     }
     else
     {
@@ -582,11 +579,7 @@ Dialog:DealerDetail(playerid, response, listitem, inputtext[])
 // Dialog:DealerBuyConfirm - konfirmasi sebelum uang dipotong.
 Dialog:DealerBuyConfirm(playerid, response, listitem, inputtext[])
 {
-    if (!response || listitem != 0) // "Batal" (opsi 1) atau ESC = kembali ke showroom
-    {
-        Dealer_ShowShowroom(playerid, pDealerSlot[playerid]);
-        return 1;
-    }
+    if (!response) return 1;
     Dealer_BuyVehicle(playerid, pDealerSlot[playerid], pDealerStock[playerid]);
     return 1;
 }
@@ -627,14 +620,12 @@ Dialog:DealerInfo(playerid, response, listitem, inputtext[])
     }
     else if (listitem == 2)
     {
-        new harga[32], msg[256], opts[2][64];
+        new harga[32], msg[256];
         FormatRupiah((dPrice[slot] * DEALER_SELL_RATE) / 100, harga, sizeof(harga));
         format(msg, sizeof(msg),
-            "Yakin ingin menjual dealer \"%s\"?~n~~n~Kamu akan menerima %s (%d%% dari harga beli).",
+            "Yakin ingin menjual dealer \"%s\"?\n\nKamu akan menerima %s (%d%% dari harga beli).",
             dName[slot], harga, DEALER_SELL_RATE);
-        format(opts[0], 64, "Jual");
-        format(opts[1], 64, "Batal");
-        UI_ShowMenu(playerid, "dialog_DealerSellConfirm", "JUAL DEALER", msg, opts, 2);
+        Dialog_Show(playerid, DealerSellConfirm, DIALOG_STYLE_MSGBOX, "Jual Dealer", msg, "Jual", "Batal");
     }
     return 1;
 }
@@ -649,7 +640,7 @@ Dialog:DealerInfoBack(playerid, response, listitem, inputtext[])
 // Dialog:DealerSellConfirm - konfirmasi jual dealer.
 Dialog:DealerSellConfirm(playerid, response, listitem, inputtext[])
 {
-    if (!response || listitem != 0) return 1; // "Batal" (opsi 1) atau ESC
+    if (!response) return 1;
     Dealer_Sell(playerid, pDealerSlot[playerid]);
     return 1;
 }
@@ -922,14 +913,12 @@ stock Dealer_CmdSell(playerid)
         return 1;
     }
     pDealerSlot[playerid] = slot;
-    new harga[32], msg[256], opts[2][64];
+    new harga[32], msg[256];
     FormatRupiah((dPrice[slot] * DEALER_SELL_RATE) / 100, harga, sizeof(harga));
     format(msg, sizeof(msg),
-        "Yakin ingin menjual dealer \"%s\"?~n~~n~Kamu akan menerima %s (%d%% dari harga beli).",
+        "Yakin ingin menjual dealer \"%s\"?\n\nKamu akan menerima %s (%d%% dari harga beli).",
         dName[slot], harga, DEALER_SELL_RATE);
-    format(opts[0], 64, "Jual");
-    format(opts[1], 64, "Batal");
-    UI_ShowMenu(playerid, "dialog_DealerSellConfirm", "JUAL DEALER", msg, opts, 2);
+    Dialog_Show(playerid, DealerSellConfirm, DIALOG_STYLE_MSGBOX, "Jual Dealer", msg, "Jual", "Batal");
     return 1;
 }
 

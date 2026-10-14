@@ -320,14 +320,12 @@ stock Business_BuyConfirm(playerid, slot)
     if (slot < 0 || slot >= MAX_BUSINESS || !bExists[slot]) return 0;
     if (bOwnerCharID[slot] > 0) return 0;
     pBizMenuSlot[playerid] = slot;
-    new harga[32], msg[320], opts[2][64];
+    new harga[32], msg[320];
     FormatRupiah(bPrice[slot], harga, sizeof(harga));
     format(msg, sizeof(msg),
-        "Yakin ingin membeli bisnis ini?~n~~n~Nama: %s~n~Tipe: %s~n~Harga: %s",
+        "Yakin ingin membeli bisnis ini?\n\nNama: %s\nTipe: %s\nHarga: %s",
         bName[slot], Business_TypeName[bType[slot]], harga);
-    format(opts[0], 64, "Beli");
-    format(opts[1], 64, "Batal");
-    UI_ShowMenu(playerid, "dialog_BizBuyConfirm", "BELI BISNIS", msg, opts, 2);
+    Dialog_Show(playerid, BizBuyConfirm, DIALOG_STYLE_MSGBOX, "Beli Bisnis", msg, "Beli", "Batal");
     return 1;
 }
 
@@ -347,7 +345,7 @@ stock Business_InfoPublic(playerid, slot)
 // Dialog:BizBuyConfirm - konfirmasi pembelian bisnis via tombol ENTER.
 Dialog:BizBuyConfirm(playerid, response, listitem, inputtext[])
 {
-    if (!response || listitem != 0) return 1; // "Batal" (opsi 1) atau ESC
+    if (!response) return 1;
     new slot = pBizMenuSlot[playerid];
     if (slot < 0 || slot >= MAX_BUSINESS || !bExists[slot]) return 1;
     Business_Buy(playerid, slot);
@@ -395,14 +393,12 @@ Dialog:BizInfo(playerid, response, listitem, inputtext[])
     }
     else if (listitem == 2)
     {
-        new harga[32], msg[256], opts[2][64];
+        new harga[32], msg[256];
         FormatRupiah((bPrice[slot] * BUSINESS_SELL_RATE) / 100, harga, sizeof(harga));
         format(msg, sizeof(msg),
-            "Yakin ingin menjual bisnis \"%s\"?~n~~n~Kamu akan menerima %s (%d%% dari harga beli).",
+            "Yakin ingin menjual bisnis \"%s\"?\n\nKamu akan menerima %s (%d%% dari harga beli).",
             bName[slot], harga, BUSINESS_SELL_RATE);
-        format(opts[0], 64, "Jual");
-        format(opts[1], 64, "Batal");
-        UI_ShowMenu(playerid, "dialog_BizSellConfirm", "JUAL BISNIS", msg, opts, 2);
+        Dialog_Show(playerid, BizSellConfirm, DIALOG_STYLE_MSGBOX, "Jual Bisnis", msg, "Jual", "Batal");
     }
     return 1;
 }
@@ -410,7 +406,7 @@ Dialog:BizInfo(playerid, response, listitem, inputtext[])
 // Dialog:BizSellConfirm - konfirmasi sebelum bisnis dijual kembali.
 Dialog:BizSellConfirm(playerid, response, listitem, inputtext[])
 {
-    if (!response || listitem != 0) return 1; // "Batal" (opsi 1) atau ESC
+    if (!response) return 1;
     new slot = pBizMenuSlot[playerid];
     if (slot < 0 || slot >= MAX_BUSINESS || !bExists[slot]) return 1;
     if (bOwnerCharID[slot] != Society_PlayerData[playerid][sPCharID])
