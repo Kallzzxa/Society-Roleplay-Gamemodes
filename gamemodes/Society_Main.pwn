@@ -743,20 +743,19 @@ stock Stats_StressLabel(Float:value, dest[], len)
     else format(dest, len, "Stres Berat");
 }
 
-// Stats_ShowMenu: menampilkan menu utama /stats (UI modern).
+// Stats_ShowMenu: menampilkan menu utama /stats.
 stock Stats_ShowMenu(playerid)
 {
-    new opts[4][64] = {"Informasi Umum", "Keuangan", "Kebutuhan", "Aset"};
-    UI_ShowMenu(playerid, "dialog_StatsMenu", "STATISTIK KARAKTER",
-        "Pilih kategori statistik:", opts, sizeof(opts));
+    Dialog_Show(playerid, StatsMenu, DIALOG_STYLE_LIST, "Statistik Karakter",
+        "Informasi Umum\nKeuangan\nKebutuhan\nAset",
+        "Pilih", "Tutup");
 }
 
-// Dialog:StatsMenu - menu utama /stats (UI modern).
+// Dialog:StatsMenu - menu utama /stats (dialog bertingkat).
 Dialog:StatsMenu(playerid, response, listitem, inputtext[])
 {
     if (!response) return 1;
     new info[512];
-    new back[1][64] = {"Kembali"};
     switch (listitem)
     {
         case 0: // Informasi Umum
@@ -768,10 +767,10 @@ Dialog:StatsMenu(playerid, response, listitem, inputtext[])
             if (Society_PlayerData[playerid][sPAdmin] > 0) format(admin, sizeof(admin), "Ya (Level %d - %s)", Society_PlayerData[playerid][sPAdmin], title);
             else format(admin, sizeof(admin), "Tidak");
             format(info, sizeof(info),
-                "Nama: %s~n~Umur: %d tahun~n~Jenis Kelamin: %s~n~Level: %d~n~EXP: %d~n~Admin: %s",
+                "Nama: %s\nUmur: %d tahun\nJenis Kelamin: %s\nLevel: %d\nEXP: %d\nAdmin: %s",
                 pCharName[playerid], pAge[playerid], gender,
                 pLevel[playerid], pExp[playerid], admin);
-            UI_ShowMenu(playerid, "dialog_StatsSub", "INFORMASI UMUM", info, back, 1);
+            Dialog_Show(playerid, StatsSub, DIALOG_STYLE_MSGBOX, "Informasi Umum", info, "Kembali", "");
         }
         case 1: // Keuangan
         {
@@ -781,9 +780,9 @@ Dialog:StatsMenu(playerid, response, listitem, inputtext[])
             FormatRupiah(pBank[playerid], bank, sizeof(bank));
             FormatRupiah(pMoney[playerid] + pBank[playerid], total, sizeof(total));
             format(info, sizeof(info),
-                "Uang Tunai: %s~n~Tabungan Bank: %s~n~Total Kekayaan: %s",
+                "Uang Tunai: %s\nTabungan Bank: %s\nTotal Kekayaan: %s",
                 uang, bank, total);
-            UI_ShowMenu(playerid, "dialog_StatsSub", "KEUANGAN", info, back, 1);
+            Dialog_Show(playerid, StatsSub, DIALOG_STYLE_MSGBOX, "Keuangan", info, "Kembali", "");
         }
         case 2: // Kebutuhan
         {
@@ -792,11 +791,11 @@ Dialog:StatsMenu(playerid, response, listitem, inputtext[])
             Stats_NeedLabel(Society_PlayerData[playerid][sPThirst], minum, sizeof(minum), "Segar", "Haus");
             Stats_StressLabel(Society_PlayerData[playerid][sPStress], stress, sizeof(stress));
             format(info, sizeof(info),
-                "Makan: %d (%s)~n~Minum: %d (%s)~n~Stress: %d (%s)~n~~n~Jaga kebutuhanmu dengan /eat dan /drink.",
+                "Makan: %d (%s)\nMinum: %d (%s)\nStress: %d (%s)\n\nJaga kebutuhanmu dengan /eat dan /drink.",
                 floatround(Society_PlayerData[playerid][sPHunger], floatround_round), makan,
                 floatround(Society_PlayerData[playerid][sPThirst], floatround_round), minum,
                 floatround(Society_PlayerData[playerid][sPStress], floatround_round), stress);
-            UI_ShowMenu(playerid, "dialog_StatsSub", "KEBUTUHAN", info, back, 1);
+            Dialog_Show(playerid, StatsSub, DIALOG_STYLE_MSGBOX, "Kebutuhan", info, "Kembali", "");
         }
         case 3: // Aset
         {
@@ -806,22 +805,22 @@ Dialog:StatsMenu(playerid, response, listitem, inputtext[])
             new bengkel = Workshop_CountOwned(Society_PlayerData[playerid][sPCharID]);
             new pom = GasStation_CountOwned(Society_PlayerData[playerid][sPCharID]);
             format(info, sizeof(info),
-                "Bisnis: %d~n~Rumah: %d~n~Kendaraan: %d (maks 2)~n~Bengkel: %d~n~Pom Bensin: %d",
+                "Bisnis: %d\nRumah: %d\nKendaraan: %d (maks 2)\nBengkel: %d\nPom Bensin: %d",
                 biz, rumah, kendaraan, bengkel, pom);
-            UI_ShowMenu(playerid, "dialog_StatsSub", "ASET", info, back, 1);
+            Dialog_Show(playerid, StatsSub, DIALOG_STYLE_MSGBOX, "Aset", info, "Kembali", "");
         }
     }
     return 1;
 }
 
-// Dialog:StatsSub - sub-menu /stats, tombol Kembali membuka menu lagi.
+// Dialog:StatsSub - sub-dialog /stats, tombol Kembali membuka menu lagi.
 Dialog:StatsSub(playerid, response, listitem, inputtext[])
 {
     if (response) Stats_ShowMenu(playerid);
     return 1;
 }
 
-// Dialog:Help - penutup menu /helpadmin (UI modern); tidak ada aksi.
+// Dialog:Help - dialog info lama, tidak dipakai lagi (diganti menu modern).
 Dialog:Help(playerid, response, listitem, inputtext[])
 {
     return 1;
@@ -1030,18 +1029,17 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // /helpadmin - daftar perintah admin (UI modern, baris dipisah ~n~)
+    // /helpadmin - daftar perintah admin (disusun via strcat agar tiap baris < batas Pawn)
     if (strcmp(cmd, "/helpadmin", true) == 0)
     {
         new helptxt[2048];
         format(helptxt, sizeof(helptxt),
-            "Perintah Admin:~n~/setadmin [id] [level] - (RCON) Atur level admin~n~/adminduty - Duty admin (nama oranye)~n~/admins - Daftar admin online~n~");
-        strcat(helptxt, "/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis~n~/createhouse [harga] [tipe] [lokasi] - (Admin 3+) Buat rumah dinamis~n~/createfaction [tipe] [nama] - (Admin 3+) Buat fraksi dinamis~n~", sizeof(helptxt));
-        strcat(helptxt, "/fsetleader [id] - (Admin 4+) Tunjuk ketua fraksi~n~/famsetleader [id] - (Admin 4+) Tunjuk ketua keluarga~n~/createws [nama] [harga] - (Admin 3+) Buat bengkel dinamis~n~/creategarage [nama] [biaya] - (Admin 3+) Buat garasi kota~n~", sizeof(helptxt));
-        strcat(helptxt, "/createzone [nama] [tipe] - (Admin 3+) Buat zona (0=Greenzone, 1=Zona Bahaya)~n~/deletezone - (Admin 4+) Hapus zona~n~/createdealer [nama] [tipe] [harga] - (Admin 3+) Buat dealer kendaraan~n~/creategasstation [nama] [harga] - (Admin 3+) Buat pom bensin~n~", sizeof(helptxt));
-        strcat(helptxt, "/kick [id] [alasan] - Tendang pemain dari server~n~/ban [id] [alasan] - Blokir pemain dari server", sizeof(helptxt));
-        new tutup[1][64] = {"Tutup"};
-        UI_ShowMenu(playerid, "dialog_Help", "BANTUAN ADMIN", helptxt, tutup, 1);
+            "Perintah Admin:\n/setadmin [id] [level] - (RCON) Atur level admin\n/adminduty - Duty admin (nama oranye)\n/admins - Daftar admin online\n");
+        strcat(helptxt, "/createbisnis [nama] [tipe] [harga] - (Admin 3+) Buat bisnis dinamis\n/createhouse [harga] [tipe] [lokasi] - (Admin 3+) Buat rumah dinamis\n/createfaction [tipe] [nama] - (Admin 3+) Buat fraksi dinamis\n", sizeof(helptxt));
+        strcat(helptxt, "/fsetleader [id] - (Admin 4+) Tunjuk ketua fraksi\n/famsetleader [id] - (Admin 4+) Tunjuk ketua keluarga\n/createws [nama] [harga] - (Admin 3+) Buat bengkel dinamis\n/creategarage [nama] [biaya] - (Admin 3+) Buat garasi kota\n", sizeof(helptxt));
+        strcat(helptxt, "/createzone [nama] [tipe] - (Admin 3+) Buat zona (0=Greenzone, 1=Zona Bahaya)\n/deletezone - (Admin 4+) Hapus zona\n/createdealer [nama] [tipe] [harga] - (Admin 3+) Buat dealer kendaraan\n/creategasstation [nama] [harga] - (Admin 3+) Buat pom bensin\n", sizeof(helptxt));
+        strcat(helptxt, "/kick [id] [alasan] - Tendang pemain dari server\n/ban [id] [alasan] - Blokir pemain dari server", sizeof(helptxt));
+        Dialog_Show(playerid, Help, DIALOG_STYLE_MSGBOX, "Bantuan Admin", helptxt, "Tutup", "");
         return 1;
     }
 

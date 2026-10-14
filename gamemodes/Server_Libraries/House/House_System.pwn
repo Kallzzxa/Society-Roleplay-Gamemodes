@@ -361,7 +361,7 @@ Dialog:HouseBuyConfirm(playerid, response, listitem, inputtext[])
     return 1;
 }
 
-// House_ShowInfo: /houseinfo - menu kelola rumah milik pemain (textdraw modern).
+// House_ShowInfo: /houseinfo - dialog kelola rumah milik pemain.
 stock House_ShowInfo(playerid)
 {
     new slot = House_OwnedNear(playerid);
@@ -372,16 +372,13 @@ stock House_ShowInfo(playerid)
         return 0;
     }
     pHouseMenuSlot[playerid] = slot;
-    new harga[32], kunci[16], title[32], sub[160];
+    new harga[32], kunci[16], list[128], title[64];
     FormatRupiah(hPrice[slot], harga, sizeof(harga));
     if (hLocked[slot]) format(kunci, sizeof(kunci), "Buka Rumah");
     else format(kunci, sizeof(kunci), "Kunci Rumah");
-    format(title, sizeof(title), "RUMAH #%d", hDBID[slot]);
-    format(sub, sizeof(sub), "Harga beli: %s~n~Pilih aksi kelola untuk rumahmu:", harga);
-    new opts[2][64];
-    format(opts[0], 64, "%s", kunci);
-    format(opts[1], 64, "Jual Rumah (70%%)");
-    UI_ShowMenu(playerid, "dialog_HouseInfo", title, sub, opts, 2);
+    format(list, sizeof(list), "%s\nJual Rumah (70%%)", kunci);
+    format(title, sizeof(title), "Rumah #%d - %s", hDBID[slot], harga);
+    Dialog_Show(playerid, HouseInfo, DIALOG_STYLE_LIST, title, list, "Pilih", "Tutup");
     return 1;
 }
 

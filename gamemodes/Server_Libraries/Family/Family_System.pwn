@@ -701,34 +701,37 @@ stock Family_ShowInfo(playerid)
     return 1;
 }
 
-// Family_ShowList: /families - menu modern (textdraw) daftar semua keluarga.
+// Family_ShowList: /families - dialog daftar semua keluarga.
 stock Family_ShowList(playerid)
 {
-    new opts[MAX_FAMILY][64], count = 0;
+    new list[1024], line[96], embed[10], count = 0;
+    list[0] = EOS;
     for (new i = 0; i < MAX_FAMILY; i++)
     {
         if (!famExists[i]) continue;
+        Family_Embed(famColor[i], embed, sizeof(embed));
         if (famLeaderCharID[i] <= 0)
         {
-            format(opts[count], 64, "%.40s (tanpa ketua)", famName[i]);
+            format(line, sizeof(line), "%s%s{FFFFFF} (tanpa ketua)\n", embed, famName[i]);
         }
         else
         {
-            format(opts[count], 64, "%.24s (Ketua: %.24s)", famName[i], famLeaderName[i]);
+            format(line, sizeof(line), "%s%s{FFFFFF} (Ketua: %s)\n", embed, famName[i], famLeaderName[i]);
         }
-        count++;
+        if ((strlen(list) + strlen(line)) < sizeof(list))
+        {
+            strcat(list, line);
+            count++;
+        }
     }
     if (count == 0)
     {
-        new opts0[1][64] = {"Tutup"};
-        UI_ShowMenu(playerid, "dialog_FamiliesList", "DAFTAR KELUARGA",
-            "Belum ada keluarga yang didirikan di server ini.~n~Ketik /createfamily [nama] untuk mendirikan satu.",
-            opts0, 1);
+        Dialog_Show(playerid, FamiliesList, DIALOG_STYLE_MSGBOX, "Daftar Keluarga",
+            "Belum ada keluarga yang didirikan di server ini.\nKetik /createfamily [nama] untuk mendirikan satu.", "Tutup", "");
     }
     else
     {
-        UI_ShowMenu(playerid, "dialog_FamiliesList", "DAFTAR KELUARGA",
-            "Pilih keluarga untuk melihat detail:", opts, count);
+        Dialog_Show(playerid, FamiliesList, DIALOG_STYLE_LIST, "Daftar Keluarga", list, "Detail", "Tutup");
     }
     return 1;
 }
@@ -946,42 +949,41 @@ public OnFamilyCreated(playerid, slot)
     return 1;
 }
 
-// OnFamilyMembersLoaded: menampilkan menu modern info keluarga + daftar anggota.
+// OnFamilyMembersLoaded: menampilkan dialog info keluarga + daftar anggota.
 public OnFamilyMembersLoaded(playerid)
 {
     if (!IsPlayerConnected(playerid)) return 1;
     new slot = pFamInfoSlot[playerid];
     if (slot < 0 || slot >= MAX_FAMILY || !famExists[slot]) return 1;
     new rows = cache_num_rows();
-    new rankname[16], myrank[16], kas[32], info[1024], line[96], ketua[32];
+    new rankname[16], myrank[16], kas[32], list[1536], line[96], title[64], header[256], warna[16], embed[10];
     FormatRupiah(famCash[slot], kas, sizeof(kas));
     Family_RankName_Get(Society_PlayerData[playerid][sPFamilyRank], myrank, sizeof(myrank));
-    // Cari nama warna keluarga dari RGB yang tersimpan.
-    new coloridx = 0;
-    for (new c = 0; c < FAMILY_COLORS; c++)
-    {
-        if (Family_ColorRGB[c] == famColor[slot]) { coloridx = c; break; }
-    }
+    Family_Embed(famColor[slot], embed, sizeof(embed));
+    format(warna, sizeof(warna), "%sWarna ini%s", embed, "{FFFFFF}");
+    new ketua[32];
     if (famLeaderCharID[slot] <= 0) format(ketua, sizeof(ketua), "-");
     else format(ketua, sizeof(ketua), "%s", famLeaderName[slot]);
-    format(info, sizeof(info),
-        "Nama: %s~n~Ketua: %s~n~Warna: %s~n~Kas: %s~n~Rank anda: %s~n~~n~Anggota (%d):~n~",
-        famName[slot], ketua, Family_ColorName[coloridx], kas, myrank, rows);
+    format(header, sizeof(header),
+        "Nama: %s\nKetua: %s\nWarna: %s\nKas: %s\nRank anda: %s\n\nAnggota (%d):\n",
+        famName[slot], ketua, warna, kas, myrank, rows);
+    list[0] = EOS;
+    strcat(list, header);
     new cname[24], trank;
     for (new i = 0; i < rows; i++)
     {
         cache_get_value_name(i, "name", cname, sizeof(cname));
         cache_get_value_name_int(i, "family_rank", trank);
         Family_RankName_Get(trank, rankname, sizeof(rankname));
-        format(line, sizeof(line), "- %s (%s)~n~", cname, rankname);
-        if ((strlen(info) + strlen(line)) < sizeof(info)) strcat(info, line);
+        format(line, sizeof(line), "- %s (%s)\n", cname, rankname);
+        if ((strlen(list) + strlen(line)) < sizeof(list)) strcat(list, line);
     }
-    new opts[1][64] = {"Tutup"};
-    UI_ShowMenu(playerid, "dialog_FamilyInfoBody", "INFO KELUARGA", info, opts, 1);
+    format(title, sizeof(title), "Keluarga: %s", famName[slot]);
+    Dialog_Show(playerid, FamilyInfoBody, DIALOG_STYLE_MSGBOX, title, list, "Tutup", "");
     return 1;
 }
 
-// OnFamilyDetailLoaded: menampilkan menu modern detail keluarga dari daftar umum.
+// OnFamilyDetailLoaded: menampilkan dialog detail keluarga dari daftar umum.
 public OnFamilyDetailLoaded(playerid)
 {
     if (!IsPlayerConnected(playerid)) return 1;
@@ -989,19 +991,15 @@ public OnFamilyDetailLoaded(playerid)
     if (slot < 0 || slot >= MAX_FAMILY || !famExists[slot]) return 1;
     new count = 0;
     cache_get_value_name_int(0, "cnt", count);
-    new ketua[32], info[512];
+    new ketua[32], info[256], title[64], warna[16], embed[10];
     if (famLeaderCharID[slot] <= 0) format(ketua, sizeof(ketua), "-");
     else format(ketua, sizeof(ketua), "%s", famLeaderName[slot]);
-    // Cari nama warna keluarga dari RGB yang tersimpan.
-    new coloridx = 0;
-    for (new c = 0; c < FAMILY_COLORS; c++)
-    {
-        if (Family_ColorRGB[c] == famColor[slot]) { coloridx = c; break; }
-    }
+    Family_Embed(famColor[slot], embed, sizeof(embed));
+    format(warna, sizeof(warna), "%sWarna ini%s", embed, "{FFFFFF}");
     format(info, sizeof(info),
-        "Nama: %s~n~Ketua: %s~n~Warna: %s~n~Jumlah anggota: %d~n~~n~Keluarga adalah basis badside: rekrut anggotamu~n~lalu kuasai jalanan bersama.",
-        famName[slot], ketua, Family_ColorName[coloridx], count);
-    new opts[1][64] = {"Tutup"};
-    UI_ShowMenu(playerid, "dialog_FamilyDetail", "DETAIL KELUARGA", info, opts, 1);
+        "Nama: %s\nKetua: %s\nWarna: %s\nJumlah anggota: %d\n\nKeluarga adalah basis badside: rekrut anggotamu\nlalu kuasai jalanan bersama.",
+        famName[slot], ketua, warna, count);
+    format(title, sizeof(title), "Keluarga: %s", famName[slot]);
+    Dialog_Show(playerid, FamilyDetail, DIALOG_STYLE_MSGBOX, title, info, "Tutup", "");
     return 1;
 }

@@ -676,7 +676,7 @@ stock Faction_Withdraw(playerid, amount)
     return 1;
 }
 
-// Faction_ShowInfo: /finfo - menu info fraksi sendiri + daftar anggota (dari DB).
+// Faction_ShowInfo: /finfo - dialog info fraksi sendiri + daftar anggota (dari DB).
 stock Faction_ShowInfo(playerid)
 {
     new slot = Faction_SlotOf(playerid);
@@ -699,42 +699,42 @@ stock Faction_ShowInfo(playerid)
     return 1;
 }
 
-// Faction_ShowList: /factions - menu modern daftar semua fraksi.
-// Klik opsi -> Dialog:FactionsList dengan listitem = indeks asli opsi.
+// Faction_ShowList: /factions - dialog daftar semua fraksi.
 stock Faction_ShowList(playerid)
 {
-    new opts[MAX_FACTION][64], n = 0;
+    new list[1024], line[96], embed[10], count = 0;
+    list[0] = EOS;
     for (new i = 0; i < MAX_FACTION; i++)
     {
         if (!fExists[i]) continue;
-        // Textdraw tidak mendukung kode warna {XXXXXX}: hanya teks polos.
+        Faction_Embed(fColor[i], embed, sizeof(embed));
         if (fLeaderCharID[i] <= 0)
         {
-            format(opts[n], sizeof(opts[]), "%s - %s (tanpa ketua)",
-                fName[i], Faction_TypeName[fType[i]]);
+            format(line, sizeof(line), "%s%s{FFFFFF} - %s (tanpa ketua)\n", embed, fName[i], Faction_TypeName[fType[i]]);
         }
         else
         {
-            format(opts[n], sizeof(opts[]), "%s - %s (Ketua: %s)",
-                fName[i], Faction_TypeName[fType[i]], fLeaderName[i]);
+            format(line, sizeof(line), "%s%s{FFFFFF} - %s (Ketua: %s)\n", embed, fName[i], Faction_TypeName[fType[i]], fLeaderName[i]);
         }
-        n++;
+        if ((strlen(list) + strlen(line)) < sizeof(list))
+        {
+            strcat(list, line);
+            count++;
+        }
     }
-    if (n == 0)
+    if (count == 0)
     {
-        new nopts[1][64] = {"Tutup"};
-        UI_ShowMenu(playerid, "dialog_FactionsList", "DAFTAR FRAKSI",
-            "Belum ada fraksi yang dibuat di server ini.", nopts, 1);
+        Dialog_Show(playerid, FactionsList, DIALOG_STYLE_MSGBOX, "Daftar Fraksi",
+            "Belum ada fraksi yang dibuat di server ini.", "Tutup", "");
     }
     else
     {
-        UI_ShowMenu(playerid, "dialog_FactionsList", "DAFTAR FRAKSI",
-            "Pilih fraksi untuk melihat detail:", opts, n);
+        Dialog_Show(playerid, FactionsList, DIALOG_STYLE_LIST, "Daftar Fraksi", list, "Detail", "Tutup");
     }
     return 1;
 }
 
-// Faction_ShowDetail: menu detail satu fraksi (dipilih dari daftar).
+// Faction_ShowDetail: dialog detail satu fraksi (dipilih dari daftar).
 stock Faction_ShowDetail(playerid, slot)
 {
     if (slot < 0 || slot >= MAX_FACTION || !fExists[slot]) return 0;
@@ -943,24 +943,23 @@ public OnFactionCreated(playerid, slot)
     return 1;
 }
 
-// OnFactionMembersLoaded: menampilkan menu info fraksi + daftar anggota.
+// OnFactionMembersLoaded: menampilkan dialog info fraksi + daftar anggota.
 public OnFactionMembersLoaded(playerid)
 {
     if (!IsPlayerConnected(playerid)) return 1;
     new slot = pFactionInfoSlot[playerid];
     if (slot < 0 || slot >= MAX_FACTION || !fExists[slot]) return 1;
     new rows = cache_num_rows();
-    new rankname[16], myrank[16], kas[32], list[1536], line[96], header[256];
-    new opts[1][64] = {"Tutup"};
+    new rankname[16], myrank[16], kas[32], list[1536], line[96], title[64], header[256];
     FormatRupiah(fCash[slot], kas, sizeof(kas));
     Faction_RankName_Get(Society_PlayerData[playerid][sPFactionRank], myrank, sizeof(myrank));
     if (fLeaderCharID[slot] <= 0)
         format(header, sizeof(header),
-            "Nama: %s~n~Tipe: %s~n~Ketua: -~n~Kas: %s~n~Rank anda: %s~n~~n~Anggota (%d):",
+            "Nama: %s\nTipe: %s\nKetua: -\nKas: %s\nRank anda: %s\n\nAnggota (%d):\n",
             fName[slot], Faction_TypeName[fType[slot]], kas, myrank, rows);
     else
         format(header, sizeof(header),
-            "Nama: %s~n~Tipe: %s~n~Ketua: %s~n~Kas: %s~n~Rank anda: %s~n~~n~Anggota (%d):",
+            "Nama: %s\nTipe: %s\nKetua: %s\nKas: %s\nRank anda: %s\n\nAnggota (%d):\n",
             fName[slot], Faction_TypeName[fType[slot]], fLeaderName[slot], kas, myrank, rows);
     list[0] = EOS;
     strcat(list, header);
@@ -970,14 +969,15 @@ public OnFactionMembersLoaded(playerid)
         cache_get_value_name(i, "name", cname, sizeof(cname));
         cache_get_value_name_int(i, "faction_rank", trank);
         Faction_RankName_Get(trank, rankname, sizeof(rankname));
-        format(line, sizeof(line), "- %s (%s)~n~", cname, rankname);
+        format(line, sizeof(line), "- %s (%s)\n", cname, rankname);
         if ((strlen(list) + strlen(line)) < sizeof(list)) strcat(list, line);
     }
-    UI_ShowMenu(playerid, "dialog_FactionInfoBody", "INFO FRAKSI", list, opts, 1);
+    format(title, sizeof(title), "Fraksi: %s", fName[slot]);
+    Dialog_Show(playerid, FactionInfoBody, DIALOG_STYLE_MSGBOX, title, list, "Tutup", "");
     return 1;
 }
 
-// OnFactionDetailLoaded: menampilkan menu detail fraksi dari daftar umum.
+// OnFactionDetailLoaded: menampilkan dialog detail fraksi dari daftar umum.
 public OnFactionDetailLoaded(playerid)
 {
     if (!IsPlayerConnected(playerid)) return 1;
@@ -985,13 +985,13 @@ public OnFactionDetailLoaded(playerid)
     if (slot < 0 || slot >= MAX_FACTION || !fExists[slot]) return 1;
     new count = 0;
     cache_get_value_name_int(0, "cnt", count);
-    new ketua[32], info[256];
-    new opts[1][64] = {"Tutup"};
+    new ketua[32], info[256], title[64];
     if (fLeaderCharID[slot] <= 0) format(ketua, sizeof(ketua), "-");
     else format(ketua, sizeof(ketua), "%s", fLeaderName[slot]);
     format(info, sizeof(info),
-        "Nama: %s~n~Tipe: %s~n~Ketua: %s~n~Jumlah anggota: %d~n~~n~Markas ditandai dengan ikon bintang.~n~Ketik /duty di markas bila anda anggotanya.",
+        "Nama: %s\nTipe: %s\nKetua: %s\nJumlah anggota: %d\n\nMarkas ditandai dengan ikon bintang.\nKetik /duty di markas bila anda anggotanya.",
         fName[slot], Faction_TypeName[fType[slot]], ketua, count);
-    UI_ShowMenu(playerid, "dialog_FactionDetail", "INFO FRAKSI", info, opts, 1);
+    format(title, sizeof(title), "Fraksi: %s", fName[slot]);
+    Dialog_Show(playerid, FactionDetail, DIALOG_STYLE_MSGBOX, title, info, "Tutup", "");
     return 1;
 }

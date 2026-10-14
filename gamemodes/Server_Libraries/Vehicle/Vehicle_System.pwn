@@ -586,12 +586,10 @@ Dialog:VehList(playerid, response, listitem, inputtext[])
     }
     if (slot == -1) return 1;
     pVehMenuSlot[playerid] = slot;
-    new nama[32], opts[3][64];
+    new nama[32];
     Vehicle_CatName(vModel[slot], nama, sizeof(nama));
-    format(opts[0], 64, "Lihat Info");
-    format(opts[1], 64, "Kunci/Buka");
-    format(opts[2], 64, "Lacak Lokasi");
-    UI_ShowMenu(playerid, "dialog_VehManage", "KELOLA KENDARAAN", nama, opts, 3);
+    Dialog_Show(playerid, VehManage, DIALOG_STYLE_LIST, nama,
+        "Lihat Info\nKunci/Buka\nLacak Lokasi", "Pilih", "Kembali");
     return 1;
 }
 
@@ -612,16 +610,15 @@ Dialog:VehManage(playerid, response, listitem, inputtext[])
     }
     if (listitem == 0)
     {
-        new nama[32], kunci[16], sub[320], obtn[1][64];
+        new nama[32], kunci[16], msg[320];
         Vehicle_CatName(vModel[slot], nama, sizeof(nama));
         if (vLocked[slot]) format(kunci, sizeof(kunci), "Terkunci");
         else format(kunci, sizeof(kunci), "Terbuka");
-        format(sub, sizeof(sub),
-            "Model: %s (ID %d)~n~Plat: %s~n~Pemilik: %s~n~Status: %s~n~Bensin: %d%%",
+        format(msg, sizeof(msg),
+            "Model: %s (ID %d)\nPlat: %s\nPemilik: %s\nStatus: %s\nBensin: %d%%",
             nama, vModel[slot], vPlate[slot], vOwnerName[slot], kunci,
             floatround(vFuel[slot], floatround_round));
-        format(obtn[0], 64, "Kembali");
-        UI_ShowMenu(playerid, "dialog_VehInfoBack", "INFO KENDARAAN", sub, obtn, 1);
+        Dialog_Show(playerid, VehInfoBack, DIALOG_STYLE_MSGBOX, "Info Kendaraan", msg, "Kembali", "");
     }
     else if (listitem == 1)
     {
@@ -653,20 +650,23 @@ Dialog:VehInfoBack(playerid, response, listitem, inputtext[])
     return 1;
 }
 
-// Vehicle_ShowList: menampilkan menu textdraw modern daftar kendaraan milik pemain.
+// Vehicle_ShowList: menampilkan dialog daftar kendaraan milik pemain.
 stock Vehicle_ShowList(playerid)
 {
     new charid = Society_PlayerData[playerid][sPCharID];
-    new opts[32][64], nama[32], kunci[16];
+    new list[512], nama[32], kunci[16], baris[96];
+    list[0] = EOS;
     new count = 0;
-    for (new i = 0; i < MAX_PVEH && count < 32; i++)
+    for (new i = 0; i < MAX_PVEH; i++)
     {
         if (!vExists[i] || vOwnerCharID[i] != charid) continue;
         Vehicle_CatName(vModel[i], nama, sizeof(nama));
         if (vGarageID[i] > 0) format(kunci, sizeof(kunci), "Di Garasi");
         else if (vLocked[i]) format(kunci, sizeof(kunci), "Terkunci");
         else format(kunci, sizeof(kunci), "Terbuka");
-        format(opts[count], 64, "%s (%s) - %s", nama, vPlate[i], kunci);
+        format(baris, sizeof(baris), "%s (%s) - %s", nama, vPlate[i], kunci);
+        if (count > 0) strcat(list, "\n", sizeof(list));
+        strcat(list, baris, sizeof(list));
         count++;
     }
     if (count == 0)
@@ -674,7 +674,7 @@ stock Vehicle_ShowList(playerid)
         SendClientMessage(playerid, COLOR_RED, "Kamu belum punya kendaraan. Beli dulu dengan /buyvehicle.");
         return 0;
     }
-    UI_ShowMenu(playerid, "dialog_VehList", "KENDARAANKU", "Pilih salah satu kendaraan:", opts, count);
+    Dialog_Show(playerid, VehList, DIALOG_STYLE_LIST, "Kendaraanku", list, "Pilih", "Tutup");
     return 1;
 }
 

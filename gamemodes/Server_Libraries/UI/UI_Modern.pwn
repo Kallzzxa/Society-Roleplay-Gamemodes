@@ -6,8 +6,6 @@
 //    Klik via SelectTextDraw; hasil klik diteruskan ke handler
 //    dialog yang SAMA (public dialog_<Nama>) via CallLocalFunction,
 //    jadi migrasi dialog lama cukup ganti Dialog_Show -> UI_ShowMenu.
-//    Mendukung paginasi otomatis bila opsi > 12 (maks 32 opsi);
-//    listitem yang diterima handler tetap indeks asli opsi.
 // Tema: latar hitam transparan, teks putih, aksen teal/hijau.
 // Di-include dari gamemodes/Society_Main.pwn (setelah Utils).
 //================================================================
@@ -27,9 +25,7 @@
 #define UI_COL_BLUE    0x4A9EFFFF
 
 //---- Batas ----
-#define UI_MAX_OPTS    12   // opsi tampil per panel (maks textdraw klik)
-#define UI_MAX_TOTAL   32   // total opsi maksimum (lebih dari ini -> paginasi)
-#define UI_PAGE_SIZE   10   // opsi data per halaman saat paginasi aktif
+#define UI_MAX_OPTS    12
 #define UI_MAX_NOTIF   3
 #define UI_NOTIF_MS    4500
 
@@ -47,12 +43,6 @@ new PlayerText:uiMenuOpt[MAX_PLAYERS][UI_MAX_OPTS];
 new PlayerText:uiMenuFoot[MAX_PLAYERS];
 new bool:uiMenuOpen[MAX_PLAYERS];
 new uiMenuHandler[MAX_PLAYERS][32];
-new uiMenuTitle2[MAX_PLAYERS][64];
-new uiMenuSub2[MAX_PLAYERS][1024];
-new uiMenuAllOpts[MAX_PLAYERS][UI_MAX_TOTAL][64];
-new uiMenuAllTotal[MAX_PLAYERS];
-new uiMenuPage[MAX_PLAYERS];
-new uiMenuIdx[MAX_PLAYERS][UI_MAX_OPTS]; // indeks asli per slot (-1=«prev, -2=next»)
 new uiMenuCount[MAX_PLAYERS];
 
 //==== NOTIFIKASI ====
@@ -125,71 +115,20 @@ stock UI_DestroyMenu(playerid)
 
 // UI_ShowMenu: menampilkan menu modern.
 // handler = nama public dialog ("dialog_<Nama>") yang menerima klik.
-// subtitle mendukung ~n~. options = daftar teks opsi (maks UI_MAX_TOTAL;
-// bila > UI_MAX_OPTS otomatis dipaginasi, listitem yang diteruskan ke
-// handler tetap indeks ASLI opsi).
+// subtitle mendukung ~n~. options = daftar teks opsi (maks UI_MAX_OPTS).
 stock UI_ShowMenu(playerid, handler[], title[], subtitle[], options[][64], optcount)
 {
     if (optcount < 1) return 0;
-    if (optcount > UI_MAX_TOTAL) optcount = UI_MAX_TOTAL;
+    if (optcount > UI_MAX_OPTS) optcount = UI_MAX_OPTS;
 
     UI_DestroyMenu(playerid);
     uiMenuOpen[playerid] = false;
     format(uiMenuHandler[playerid], sizeof(uiMenuHandler[]), "%s", handler);
-    format(uiMenuTitle2[playerid], sizeof(uiMenuTitle2[]), "%s", title);
-    format(uiMenuSub2[playerid], sizeof(uiMenuSub2[]), "%s", subtitle);
-    uiMenuAllTotal[playerid] = optcount;
-    uiMenuPage[playerid] = 0;
-    for (new i = 0; i < optcount; i++)
-    {
-        format(uiMenuAllOpts[playerid][i], 64, "%s", options[i]);
-    }
-    UI_RenderMenu(playerid);
-    return 1;
-}
+    uiMenuCount[playerid] = optcount;
 
-// UI_MakeOption: membuat satu textdraw opsi yang bisa diklik.
-stock UI_MakeOption(playerid, slot, Float:rowY, text[])
-{
-    uiMenuOpt[playerid][slot] = CreatePlayerTextDraw(playerid, 455.0, rowY, text);
-    PlayerTextDrawFont(playerid, uiMenuOpt[playerid][slot], 1);
-    PlayerTextDrawLetterSize(playerid, uiMenuOpt[playerid][slot], 0.24, 1.05);
-    PlayerTextDrawColor(playerid, uiMenuOpt[playerid][slot], UI_COL_WHITE);
-    PlayerTextDrawSetOutline(playerid, uiMenuOpt[playerid][slot], 1);
-    PlayerTextDrawTextSize(playerid, uiMenuOpt[playerid][slot], 613.0, rowY + 16.0);
-    PlayerTextDrawSetSelectable(playerid, uiMenuOpt[playerid][slot], 1);
-    return 1;
-}
-
-// UI_RenderMenu: menggambar ulang menu dari data tersimpan.
-// Dipanggil UI_ShowMenu dan saat pindah halaman paginasi.
-stock UI_RenderMenu(playerid)
-{
-    UI_DestroyMenu(playerid);
-    uiMenuOpen[playerid] = false;
-
-    new total = uiMenuAllTotal[playerid];
-    new page = uiMenuPage[playerid];
-
-    // Tentukan baris yang tampil di halaman ini.
-    new start = 0, showcount = total, hasPrev = 0, hasNext = 0;
-    if (total > UI_MAX_OPTS)
-    {
-        start = page * UI_PAGE_SIZE;
-        if (start >= total || start < 0)
-        {
-            start = 0; page = 0;
-            uiMenuPage[playerid] = 0;
-        }
-        showcount = total - start;
-        if (showcount > UI_PAGE_SIZE) { showcount = UI_PAGE_SIZE; hasNext = 1; }
-        if (page > 0) hasPrev = 1;
-    }
-    new rows = showcount + hasPrev + hasNext;
-
-    new sublines = UI_CountLines(uiMenuSub2[playerid]);
+    new sublines = UI_CountLines(subtitle);
     new Float:oy = 186.0 + float(sublines) * 11.0 + 8.0; // y opsi pertama
-    new Float:panelB = oy + float(rows) * 22.0 + 26.0; // bawah panel
+    new Float:panelB = oy + float(optcount) * 22.0 + 26.0; // bawah panel
 
     // Latar panel.
     uiMenuBG[playerid] = CreatePlayerTextDraw(playerid, 445.0, 140.0, "_");
@@ -202,41 +141,29 @@ stock UI_RenderMenu(playerid)
     PlayerTextDrawUseBox(playerid, uiMenuBar[playerid], 1);
     PlayerTextDrawBoxColor(playerid, uiMenuBar[playerid], UI_COL_ACCENT);
     // Judul.
-    uiMenuTitle[playerid] = CreatePlayerTextDraw(playerid, 455.0, 146.0, uiMenuTitle2[playerid]);
+    uiMenuTitle[playerid] = CreatePlayerTextDraw(playerid, 455.0, 146.0, title);
     PlayerTextDrawFont(playerid, uiMenuTitle[playerid], 2);
     PlayerTextDrawLetterSize(playerid, uiMenuTitle[playerid], 0.28, 1.2);
     PlayerTextDrawColor(playerid, uiMenuTitle[playerid], UI_COL_WHITE);
     PlayerTextDrawSetOutline(playerid, uiMenuTitle[playerid], 1);
     // Subtitle / isi.
-    uiMenuSub[playerid] = CreatePlayerTextDraw(playerid, 455.0, 178.0, uiMenuSub2[playerid]);
+    uiMenuSub[playerid] = CreatePlayerTextDraw(playerid, 455.0, 178.0, subtitle);
     PlayerTextDrawFont(playerid, uiMenuSub[playerid], 1);
     PlayerTextDrawLetterSize(playerid, uiMenuSub[playerid], 0.21, 0.95);
     PlayerTextDrawColor(playerid, uiMenuSub[playerid], UI_COL_GREY);
     PlayerTextDrawSetOutline(playerid, uiMenuSub[playerid], 1);
     // Opsi (bisa diklik).
-    new slot = 0;
-    if (hasPrev)
+    for (new i = 0; i < optcount; i++)
     {
-        new Float:rowY = oy + float(slot) * 22.0;
-        UI_MakeOption(playerid, slot, rowY, "<< Sebelumnya");
-        uiMenuIdx[playerid][slot] = -1;
-        slot++;
+        new Float:rowY = oy + float(i) * 22.0;
+        uiMenuOpt[playerid][i] = CreatePlayerTextDraw(playerid, 455.0, rowY, options[i]);
+        PlayerTextDrawFont(playerid, uiMenuOpt[playerid][i], 1);
+        PlayerTextDrawLetterSize(playerid, uiMenuOpt[playerid][i], 0.24, 1.05);
+        PlayerTextDrawColor(playerid, uiMenuOpt[playerid][i], UI_COL_WHITE);
+        PlayerTextDrawSetOutline(playerid, uiMenuOpt[playerid][i], 1);
+        PlayerTextDrawTextSize(playerid, uiMenuOpt[playerid][i], 613.0, rowY + 16.0);
+        PlayerTextDrawSetSelectable(playerid, uiMenuOpt[playerid][i], 1);
     }
-    for (new i = 0; i < showcount; i++)
-    {
-        new Float:rowY = oy + float(slot) * 22.0;
-        UI_MakeOption(playerid, slot, rowY, uiMenuAllOpts[playerid][start + i]);
-        uiMenuIdx[playerid][slot] = start + i;
-        slot++;
-    }
-    if (hasNext)
-    {
-        new Float:rowY = oy + float(slot) * 22.0;
-        UI_MakeOption(playerid, slot, rowY, "Berikutnya >>");
-        uiMenuIdx[playerid][slot] = -2;
-        slot++;
-    }
-    uiMenuCount[playerid] = slot;
     // Footer.
     uiMenuFoot[playerid] = CreatePlayerTextDraw(playerid, 532.0, panelB - 18.0, "ESC tutup");
     PlayerTextDrawAlignment(playerid, uiMenuFoot[playerid], 2);
@@ -248,7 +175,7 @@ stock UI_RenderMenu(playerid)
     PlayerTextDrawShow(playerid, uiMenuBar[playerid]);
     PlayerTextDrawShow(playerid, uiMenuTitle[playerid]);
     PlayerTextDrawShow(playerid, uiMenuSub[playerid]);
-    for (new i = 0; i < uiMenuCount[playerid]; i++)
+    for (new i = 0; i < optcount; i++)
     {
         PlayerTextDrawShow(playerid, uiMenuOpt[playerid][i]);
     }
@@ -288,20 +215,7 @@ stock UI_OnMenuClick(playerid, PlayerText:playertextid)
     {
         if (playertextid == uiMenuOpt[playerid][i])
         {
-            new idx = uiMenuIdx[playerid][i];
-            if (idx == -1) // "<< Sebelumnya"
-            {
-                uiMenuPage[playerid]--;
-                UI_RenderMenu(playerid);
-                return 1;
-            }
-            if (idx == -2) // "Berikutnya >>"
-            {
-                uiMenuPage[playerid]++;
-                UI_RenderMenu(playerid);
-                return 1;
-            }
-            UI_CloseMenu(playerid, 1, idx); // idx = indeks asli opsi
+            UI_CloseMenu(playerid, 1, i);
             return 1;
         }
     }
@@ -420,10 +334,6 @@ stock UI_OnDisconnect(playerid)
     UI_HideNotif(playerid);
     UI_HideMenu(playerid);
     uiMenuHandler[playerid][0] = EOS;
-    uiMenuTitle2[playerid][0] = EOS;
-    uiMenuSub2[playerid][0] = EOS;
-    uiMenuAllTotal[playerid] = 0;
-    uiMenuPage[playerid] = 0;
     uiMenuCount[playerid] = 0;
     return 1;
 }
