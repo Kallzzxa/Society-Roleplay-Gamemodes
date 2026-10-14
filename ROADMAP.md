@@ -184,10 +184,20 @@ compile 0 error, commit+push per item.
       di /stats > Aset. /help dipisah: perintah admin pindah ke
       `/helpadmin` (baris string /help melebihi batas Pawn). Modul:
       `Server_Libraries/GasStation/GasStation_System.pwn`.
-- [ ] **Dynamic Door**: tabel `doors` (id, owner_type [house/business/
-      faction], owner_id, name, ext pos, int pos+interior, locked).
-      Admin/pemilik `/createdoor` → pintu masuk/keluar interior apa pun
-      (rumah, bisnis, markas). `/lockdoor`, pickup + label 3D.
+- [x] **Dynamic Door** (selesai 2026-10-14): tabel `doors`
+      (id, owner_type [0=rumah/1=bisnis/2=fraksi], owner_id, name,
+      ext pos+int+vw, int pos+int+vw, locked).
+      `/createdoor [tipe] [id_pemilik] [nama]` 2 langkah (admin 3+ untuk
+      semua entitas, pemilik rumah/bisnis atau ketua fraksi untuk
+      miliknya) — langkah 1 catat sisi luar, langkah 2 catat titik
+      interior tujuan. Pickup + label 3D di kedua sisi
+      (`[PINTU ID:x]`, nama, pemilik, status terkunci).
+      Masuk/keluar pakai tombol ENTER (F); pintu terkunci hanya bisa
+      dimasuki pengelola. `/doors` (daftar + dialog kelola untuk
+      pemilik/admin 3+: kunci/buka, ganti nama, hapus via konfirmasi),
+      `/doorinfo`, `/lockdoor` (pemilik/admin 3+), `/deletedoor`
+      (admin 4+/pemilik). `/help` & `/helpadmin` diperbarui. Modul:
+      `Server_Libraries/Door/Door_System.pwn`.
 - [x] **Inventory System (textdraw)** (selesai 2026-10-14): tabel
       `inventory` (char_id, item_id, amount). `/inv` → panel PlayerTextDraw
       5 slot klik (SelectTextDraw): Roti, Air Mineral, Coconut Water,

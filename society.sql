@@ -266,3 +266,29 @@ CREATE TABLE IF NOT EXISTS `starterpack_claims` (
     `char_id` INT PRIMARY KEY,
     `claimed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Skema pintu dinamis (update 2026-10-14).
+-- doors: menghubungkan sisi luar <-> interior apa pun (rumah/bisnis/fraksi).
+-- owner_type: 0 = rumah (id tabel houses), 1 = bisnis (id tabel businesses),
+-- 2 = fraksi (id tabel factions). ext_* = sisi luar, int_* = sisi dalam/interior.
+CREATE TABLE IF NOT EXISTS `doors` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `owner_type` TINYINT DEFAULT 0,
+    `owner_id` INT DEFAULT 0,
+    `name` VARCHAR(32) NOT NULL,
+    `ext_x` FLOAT NOT NULL,
+    `ext_y` FLOAT NOT NULL,
+    `ext_z` FLOAT NOT NULL,
+    `ext_int` INT DEFAULT 0,
+    `ext_vw` INT DEFAULT 0,
+    `int_x` FLOAT NOT NULL,
+    `int_y` FLOAT NOT NULL,
+    `int_z` FLOAT NOT NULL,
+    `int_int` INT DEFAULT 0,
+    `int_vw` INT DEFAULT 0,
+    `locked` TINYINT DEFAULT 0,
+    INDEX `idx_door_owner` (`owner_type`, `owner_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Untuk database yang sudah ada (dibuat sebelum update pintu dinamis), jalankan:
+-- (cukup import ulang blok CREATE TABLE `doors` di atas)
