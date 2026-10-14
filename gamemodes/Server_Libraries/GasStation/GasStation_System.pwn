@@ -545,7 +545,7 @@ stock GasStation_OnEnterVehicle(playerid, vehicleid)
 // INFO & DAFTAR
 //================================================================
 
-// GasStation_ShowInfoText: teks info pom untuk dialog.
+// GasStation_ShowInfoText: teks info pom untuk menu modern (subtitle pakai ~n~).
 stock GasStation_ShowInfoText(playerid, slot, dest[], len)
 {
     if (slot < 0 || slot >= MAX_GASSTATION || !gsExists[slot]) return 0;
@@ -554,13 +554,13 @@ stock GasStation_ShowInfoText(playerid, slot, dest[], len)
     FormatRupiah(gsPricePerLiter[slot], hargaliter, sizeof(hargaliter));
     FormatRupiah(gsProfit[slot], profit, sizeof(profit));
     format(dest, len,
-        "ID: %d\nNama: %s\nHarga Beli: %s\nPemilik: %s\nHarga Bensin: %s/liter\nStok: %d liter (maks %d)\nKeuntungan: %s\nHarga pemasok: Rp%d/liter",
+        "ID: %d~n~Nama: %s~n~Harga Beli: %s~n~Pemilik: %s~n~Harga Bensin: %s/liter~n~Stok: %d liter (maks %d)~n~Keuntungan: %s~n~Harga pemasok: Rp%d/liter",
         gsDBID[slot], gsName[slot], harga, gsOwnerName[slot], hargaliter,
         gsStock[slot], GAS_MAX_STOCK, profit, GAS_SUPPLY_COST);
     return 1;
 }
 
-// GasStation_ShowInfo: dialog kelola pom milik pemain.
+// GasStation_ShowInfo: menu modern kelola pom milik pemain.
 stock GasStation_ShowInfo(playerid, slot)
 {
     if (slot < 0 || slot >= MAX_GASSTATION || !gsExists[slot]) return 0;
@@ -570,12 +570,14 @@ stock GasStation_ShowInfo(playerid, slot)
         return 0;
     }
     pGasSlot[playerid] = slot;
-    new profit[32], title[48], menu[256];
+    new profit[32], opts[4][64], title[64];
     FormatRupiah(gsProfit[slot], profit, sizeof(profit));
-    format(title, sizeof(title), "Pom: %s", gsName[slot]);
-    format(menu, sizeof(menu),
-        "Info Pom\nIsi Ulang Stok Bensin\nAmbil Keuntungan (%s)\nJual Pom", profit);
-    Dialog_Show(playerid, GasInfo, DIALOG_STYLE_LIST, title, menu, "Pilih", "Tutup");
+    format(opts[0], 64, "Info Pom");
+    format(opts[1], 64, "Isi Ulang Stok Bensin");
+    format(opts[2], 64, "Ambil Keuntungan (%s)", profit);
+    format(opts[3], 64, "Jual Pom");
+    format(title, sizeof(title), "POM BENSIN: %s", gsName[slot]);
+    UI_ShowMenu(playerid, "dialog_GasInfo", title, "Pilih salah satu opsi:", opts, 4);
     return 1;
 }
 
@@ -593,11 +595,10 @@ stock GasStation_ShowForSale(playerid, slot)
     return 1;
 }
 
-// GasStation_ShowList: dialog daftar semua pom di server.
+// GasStation_ShowList: menu modern daftar semua pom di server.
 stock GasStation_ShowList(playerid)
 {
-    new list[1024], baris[128], status[24], harga[32];
-    list[0] = EOS;
+    new opts[MAX_GASSTATION][64], baris[128], status[24], harga[32];
     new count = 0;
     for (new i = 0; i < MAX_GASSTATION; i++)
     {
@@ -606,8 +607,7 @@ stock GasStation_ShowList(playerid)
         if (gsOwnerCharID[i] > 0) format(status, sizeof(status), "Beroperasi");
         else format(status, sizeof(status), "Dijual");
         format(baris, sizeof(baris), "%s - %s/liter (%s)", gsName[i], harga, status);
-        if (count > 0) strcat(list, "\n", sizeof(list));
-        strcat(list, baris, sizeof(list));
+        format(opts[count], 64, "%s", baris); // otomatis dipotong jadi 63 char
         count++;
     }
     if (count == 0)
@@ -615,7 +615,7 @@ stock GasStation_ShowList(playerid)
         SendClientMessage(playerid, COLOR_RED, "Belum ada pom bensin di server.");
         return 0;
     }
-    Dialog_Show(playerid, GasList, DIALOG_STYLE_LIST, "Daftar Pom Bensin", list, "Lihat", "Tutup");
+    UI_ShowMenu(playerid, "dialog_GasList", "DAFTAR POM BENSIN", "Pilih pom bensin untuk melihat detail:", opts, count);
     return 1;
 }
 
@@ -644,9 +644,10 @@ Dialog:GasInfo(playerid, response, listitem, inputtext[])
     }
     if (listitem == 0)
     {
-        new msg[384];
+        new msg[384], opts[1][64];
         GasStation_ShowInfoText(playerid, slot, msg, sizeof(msg));
-        Dialog_Show(playerid, GasInfoBack, DIALOG_STYLE_MSGBOX, "Info Pom", msg, "Kembali", "");
+        format(opts[0], 64, "Kembali");
+        UI_ShowMenu(playerid, "dialog_GasInfoBack", "INFO POM", msg, opts, 1);
     }
     else if (listitem == 1)
     {
@@ -663,12 +664,14 @@ Dialog:GasInfo(playerid, response, listitem, inputtext[])
     }
     else if (listitem == 3)
     {
-        new harga[32], msg[256];
+        new harga[32], msg[256], opts[2][64];
         FormatRupiah((gsPrice[slot] * GAS_SELL_RATE) / 100, harga, sizeof(harga));
         format(msg, sizeof(msg),
-            "Yakin ingin menjual pom \"%s\"?\n\nKamu akan menerima %s (%d%% dari harga beli).",
+            "Yakin ingin menjual pom \"%s\"?~n~~n~Kamu akan menerima %s (%d%% dari harga beli).",
             gsName[slot], harga, GAS_SELL_RATE);
-        Dialog_Show(playerid, GasSellConfirm, DIALOG_STYLE_MSGBOX, "Jual Pom", msg, "Jual", "Batal");
+        format(opts[0], 64, "Jual");
+        format(opts[1], 64, "Batal");
+        UI_ShowMenu(playerid, "dialog_GasSellConfirm", "JUAL POM", msg, opts, 2);
     }
     return 1;
 }
@@ -696,7 +699,7 @@ Dialog:GasBuyStock(playerid, response, listitem, inputtext[])
 // Dialog:GasSellConfirm - konfirmasi jual pom.
 Dialog:GasSellConfirm(playerid, response, listitem, inputtext[])
 {
-    if (!response) return 1;
+    if (!response || listitem != 0) return 1; // "Batal" (opsi 1) atau ESC
     GasStation_Sell(playerid, pGasSlot[playerid]);
     return 1;
 }
@@ -724,9 +727,10 @@ Dialog:GasList(playerid, response, listitem, inputtext[])
     }
     if (slot == -1) return 1;
     pGasListSlot[playerid] = slot;
-    new msg[384];
+    new msg[384], opts[1][64];
     GasStation_ShowInfoText(playerid, slot, msg, sizeof(msg));
-    Dialog_Show(playerid, GasListBack, DIALOG_STYLE_MSGBOX, "Detail Pom Bensin", msg, "Kembali", "");
+    format(opts[0], 64, "Kembali");
+    UI_ShowMenu(playerid, "dialog_GasListBack", "DETAIL POM BENSIN", msg, opts, 1);
     return 1;
 }
 
@@ -1019,12 +1023,14 @@ stock GasStation_CmdSell(playerid)
         return 1;
     }
     pGasSlot[playerid] = slot;
-    new harga[32], msg[256];
+    new harga[32], msg[256], opts[2][64];
     FormatRupiah((gsPrice[slot] * GAS_SELL_RATE) / 100, harga, sizeof(harga));
     format(msg, sizeof(msg),
-        "Yakin ingin menjual pom \"%s\"?\n\nKamu akan menerima %s (%d%% dari harga beli).",
+        "Yakin ingin menjual pom \"%s\"?~n~~n~Kamu akan menerima %s (%d%% dari harga beli).",
         gsName[slot], harga, GAS_SELL_RATE);
-    Dialog_Show(playerid, GasSellConfirm, DIALOG_STYLE_MSGBOX, "Jual Pom", msg, "Jual", "Batal");
+    format(opts[0], 64, "Jual");
+    format(opts[1], 64, "Batal");
+    UI_ShowMenu(playerid, "dialog_GasSellConfirm", "JUAL POM", msg, opts, 2);
     return 1;
 }
 

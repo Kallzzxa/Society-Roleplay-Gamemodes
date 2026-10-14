@@ -33,10 +33,18 @@ bertahap. Framework: `Server_Libraries/UI/UI_Modern.pwn` — `UI_ShowMenu`
       (bar tipis MAKAN hijau / MINUM biru / STRESS kiri-bawah) +
       `/help` jadi menu kategori modern + dialog starterpack jadi menu
       modern + notifikasi sukses klaim starterpack.
-- [ ] **Fase 2**: migrasi dialog pemain yang sering dipakai → UI modern:
-      `/stats` (menu bertingkat), `/vlist`, `/garage`, `/dealer` (showroom),
-      `/bizinfo`, `/houseinfo`, `/wsinfo`, `/gasinfo`, `/dealerinfo`,
-      `/finfo`, `/faminfo`, `/zones`, `/helpadmin` (panel konten panjang).
+- [x] **Fase 2** (selesai 2026-10-14): migrasi dialog pemain yang sering dipakai
+      → UI modern: `/stats` (menu bertingkat), `/vlist`, `/garage` (+ `/garages`),
+      `/dealer` (showroom, paginasi otomatis untuk 16 stok), `/dealerinfo` (+ `/dealers`),
+      `/bizinfo`, `/houseinfo`, `/wsinfo`, `/gasinfo` (+ `/gasstations`),
+      `/finfo` (+ `/factions`), `/faminfo` (+ `/families`), `/zones`,
+      `/helpadmin` (panel konten panjang). Framework `UI_Modern.pwn` kini
+      mendukung paginasi otomatis (maks 32 opsi, 10/halaman, `listitem`
+      tetap indeks asli). Dialog konfirmasi 2-tombol yang dimigrasi
+      (GarageStoreConfirm, GarageTransferConfirm, WsSellConfirm,
+      GasSellConfirm) diperbaiki: klik "Batal" tidak lagi menjalankan aksi
+      (`!response || listitem != 0`). Dialog INPUT/pembelian (Fase 3) dan
+      undangan fraksi/keluarga tetap dialog.
 - [ ] **Fase 3**: migrasi dialog pembuatan/pembelian (input tetap dialog):
       `/createbisnis`, `/createhouse`, `/createws`, `/creategarage`,
       `/createzone`, `/createdealer`, `/creategasstation`, `/createfamily`,

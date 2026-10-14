@@ -354,33 +354,25 @@ stock Dealer_NotifyOwner(slot, buyerid, buyername[], price)
 // SHOWROOM: TEST DRIVE & BELI
 //================================================================
 
-// Dealer_BuildStockList: menyusun daftar stok showroom untuk dialog.
-stock Dealer_BuildStockList(slot, dest[], len)
-{
-    if (slot < 0 || slot >= MAX_DEALER || !dExists[slot]) return 0;
-    dest[0] = EOS;
-    new harga[32], baris[96], count = g_DealerStockCount[dType[slot]];
-    for (new i = 0; i < count; i++)
-    {
-        new catidx = g_DealerStock[dType[slot]][i];
-        FormatRupiah(g_VehCatPrice[catidx], harga, sizeof(harga));
-        format(baris, sizeof(baris), "%s - %s", g_VehCatName[catidx], harga);
-        if (i > 0) strcat(dest, "\n", len);
-        strcat(dest, baris, len);
-    }
-    return count;
-}
-
-// Dealer_ShowShowroom: dialog daftar stok dealer (untuk pembeli).
+// Dealer_ShowShowroom: menu stok showroom (untuk pembeli).
+// Memakai UI_ShowMenu (migrasi dari dialog LIST); klik diteruskan ke Dialog:DealerStock.
 stock Dealer_ShowShowroom(playerid, slot)
 {
     if (slot < 0 || slot >= MAX_DEALER || !dExists[slot]) return 0;
-    new list[1024];
-    Dealer_BuildStockList(slot, list, sizeof(list));
     pDealerSlot[playerid] = slot;
+    new count = g_DealerStockCount[dType[slot]];
+    new opts[32][64], harga[32], n = 0;
+    for (new i = 0; i < count && n < 32; i++)
+    {
+        new catidx = g_DealerStock[dType[slot]][i];
+        FormatRupiah(g_VehCatPrice[catidx], harga, sizeof(harga));
+        format(opts[n], 64, "%s - %s", g_VehCatName[catidx], harga);
+        n++;
+    }
     new title[48];
-    format(title, sizeof(title), "Showroom: %s", dName[slot]);
-    Dialog_Show(playerid, DealerStock, DIALOG_STYLE_LIST, title, list, "Pilih", "Tutup");
+    format(title, sizeof(title), "SHOWROOM: %s", dName[slot]);
+    UI_ShowMenu(playerid, "dialog_DealerStock", title,
+        "Pilih kendaraan untuk melihat detail:", opts, n);
     return 1;
 }
 
@@ -469,7 +461,8 @@ stock Dealer_BuyVehicle(playerid, slot, catidx)
     return 1;
 }
 
-// Dealer_ShowInfo: dialog kelola dealer milik pemain (info + komisi + jual).
+// Dealer_ShowInfo: menu kelola dealer milik pemain (info + komisi + jual).
+// Memakai UI_ShowMenu (migrasi dari dialog LIST); klik diteruskan ke Dialog:DealerInfo.
 stock Dealer_ShowInfo(playerid, slot)
 {
     if (slot < 0 || slot >= MAX_DEALER || !dExists[slot]) return 0;
@@ -479,29 +472,15 @@ stock Dealer_ShowInfo(playerid, slot)
         return 0;
     }
     pDealerSlot[playerid] = slot;
-    new tipe[16], profit[32], title[48];
-    Dealer_TypeName(dType[slot], tipe, sizeof(tipe));
+    new profit[32], title[48];
     FormatRupiah(dProfit[slot], profit, sizeof(profit));
-    format(title, sizeof(title), "Dealer: %s", dName[slot]);
-    new menu[256];
-    format(menu, sizeof(menu),
-        "Info Dealer\nAmbil Komisi (%s)\nJual Dealer", profit);
-    Dialog_Show(playerid, DealerInfo, DIALOG_STYLE_LIST, title, menu, "Pilih", "Tutup");
-    return 1;
-}
-
-// Dealer_ShowInfoText: teks info dealer untuk dialog.
-stock Dealer_ShowInfoText(playerid, slot, dest[], len)
-{
-    if (slot < 0 || slot >= MAX_DEALER || !dExists[slot]) return 0;
-    new tipe[16], harga[32], profit[32];
-    Dealer_TypeName(dType[slot], tipe, sizeof(tipe));
-    FormatRupiah(dPrice[slot], harga, sizeof(harga));
-    FormatRupiah(dProfit[slot], profit, sizeof(profit));
-    format(dest, len,
-        "ID: %d\nNama: %s\nTipe: %s (%d kendaraan)\nHarga Beli: %s\nPemilik: %s\nKomisi: %s (%d%% tiap penjualan)",
-        dDBID[slot], dName[slot], tipe, g_DealerStockCount[dType[slot]],
-        harga, dOwnerName[slot], profit, DEALER_COMMISSION);
+    format(title, sizeof(title), "DEALER: %s", dName[slot]);
+    new opts[3][64];
+    format(opts[0], 64, "Info Dealer");
+    format(opts[1], 64, "Ambil Komisi (%s)", profit);
+    format(opts[2], 64, "Jual Dealer");
+    UI_ShowMenu(playerid, "dialog_DealerInfo", title,
+        "Pilih salah satu menu di bawah:", opts, 3);
     return 1;
 }
 
@@ -509,21 +488,20 @@ stock Dealer_ShowInfoText(playerid, slot, dest[], len)
 // /dealers: DAFTAR SEMUA DEALER
 //================================================================
 
-// Dealer_ShowList: dialog daftar semua dealer di server.
+// Dealer_ShowList: menu daftar semua dealer di server.
+// Memakai UI_ShowMenu (migrasi dari dialog LIST, maks 32 tampil);
+// klik diteruskan ke Dialog:DealerList.
 stock Dealer_ShowList(playerid)
 {
-    new list[1024], baris[128], tipe[16], status[16];
-    list[0] = EOS;
+    new opts[32][64], tipe[16], status[16];
     new count = 0;
-    for (new i = 0; i < MAX_DEALER; i++)
+    for (new i = 0; i < MAX_DEALER && count < 32; i++)
     {
         if (!dExists[i]) continue;
         Dealer_TypeName(dType[i], tipe, sizeof(tipe));
         if (dOwnerCharID[i] > 0) format(status, sizeof(status), "Dimiliki");
         else format(status, sizeof(status), "Dijual");
-        format(baris, sizeof(baris), "%s (%s) - %s", dName[i], tipe, status);
-        if (count > 0) strcat(list, "\n", sizeof(list));
-        strcat(list, baris, sizeof(list));
+        format(opts[count], 64, "%s (%s) - %s", dName[i], tipe, status);
         count++;
     }
     if (count == 0)
@@ -531,7 +509,8 @@ stock Dealer_ShowList(playerid)
         SendClientMessage(playerid, COLOR_RED, "Belum ada dealer di server.");
         return 0;
     }
-    Dialog_Show(playerid, DealerList, DIALOG_STYLE_LIST, "Daftar Dealer", list, "Lihat", "Tutup");
+    UI_ShowMenu(playerid, "dialog_DealerList", "DAFTAR DEALER",
+        "Pilih dealer untuk melihat detail:", opts, count);
     return 1;
 }
 
@@ -560,13 +539,13 @@ Dialog:DealerStock(playerid, response, listitem, inputtext[])
     if (listitem < 0 || listitem >= count) return 1;
     pDealerStock[playerid] = g_DealerStock[dType[slot]][listitem];
     new catidx = pDealerStock[playerid];
-    new harga[32], msg[256];
+    new harga[32];
     FormatRupiah(g_VehCatPrice[catidx], harga, sizeof(harga));
-    format(msg, sizeof(msg),
-        "Kamu memilih:\n\n%s\nHarga: %s\n\nMau coba dulu atau beli langsung?",
+    new opts[3][64] = {"Test Drive (60 detik)", "Beli Sekarang", "Kembali"};
+    new sub[192];
+    format(sub, sizeof(sub), "%s~n~Harga: %s~n~Mau coba dulu atau beli langsung?",
         g_VehCatName[catidx], harga);
-    Dialog_Show(playerid, DealerDetail, DIALOG_STYLE_LIST, g_VehCatName[catidx],
-        "Test Drive (60 detik)\nBeli Sekarang\nKembali", "Pilih", "Tutup");
+    UI_ShowMenu(playerid, "dialog_DealerDetail", "DETAIL KENDARAAN", sub, opts, 3);
     return 1;
 }
 
@@ -624,9 +603,16 @@ Dialog:DealerInfo(playerid, response, listitem, inputtext[])
     }
     if (listitem == 0)
     {
-        new msg[384];
-        Dealer_ShowInfoText(playerid, slot, msg, sizeof(msg));
-        Dialog_Show(playerid, DealerInfoBack, DIALOG_STYLE_MSGBOX, "Info Dealer", msg, "Kembali", "");
+        new tipe[16], harga[32], profit[32], sub[512];
+        Dealer_TypeName(dType[slot], tipe, sizeof(tipe));
+        FormatRupiah(dPrice[slot], harga, sizeof(harga));
+        FormatRupiah(dProfit[slot], profit, sizeof(profit));
+        format(sub, sizeof(sub),
+            "ID: %d~n~Nama: %s~n~Tipe: %s (%d kendaraan)~n~Harga Beli: %s~n~Pemilik: %s~n~Komisi: %s (%d%% tiap penjualan)",
+            dDBID[slot], dName[slot], tipe, g_DealerStockCount[dType[slot]],
+            harga, dOwnerName[slot], profit, DEALER_COMMISSION);
+        new opts[1][64] = {"Kembali"};
+        UI_ShowMenu(playerid, "dialog_DealerInfoBack", "INFO DEALER", sub, opts, 1);
     }
     else if (listitem == 1)
     {
@@ -676,9 +662,16 @@ Dialog:DealerList(playerid, response, listitem, inputtext[])
     }
     if (slot == -1) return 1;
     pDealerListSlot[playerid] = slot;
-    new msg[384];
-    Dealer_ShowInfoText(playerid, slot, msg, sizeof(msg));
-    Dialog_Show(playerid, DealerListBack, DIALOG_STYLE_MSGBOX, "Detail Dealer", msg, "Kembali", "");
+    new tipe[16], harga[32], profit[32], sub[512];
+    Dealer_TypeName(dType[slot], tipe, sizeof(tipe));
+    FormatRupiah(dPrice[slot], harga, sizeof(harga));
+    FormatRupiah(dProfit[slot], profit, sizeof(profit));
+    format(sub, sizeof(sub),
+        "ID: %d~n~Nama: %s~n~Tipe: %s (%d kendaraan)~n~Harga Beli: %s~n~Pemilik: %s~n~Komisi: %s (%d%% tiap penjualan)",
+        dDBID[slot], dName[slot], tipe, g_DealerStockCount[dType[slot]],
+        harga, dOwnerName[slot], profit, DEALER_COMMISSION);
+    new opts[1][64] = {"Kembali"};
+    UI_ShowMenu(playerid, "dialog_DealerListBack", "DETAIL DEALER", sub, opts, 1);
     return 1;
 }
 

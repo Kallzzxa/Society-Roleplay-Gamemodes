@@ -292,7 +292,7 @@ stock Business_ToggleLock(playerid, slot)
     return 1;
 }
 
-// Business_ShowInfo: /bizinfo - dialog kelola bisnis milik pemain.
+// Business_ShowInfo: /bizinfo - menu kelola bisnis milik pemain (textdraw modern).
 stock Business_ShowInfo(playerid)
 {
     new slot = Business_OwnedNear(playerid);
@@ -302,13 +302,15 @@ stock Business_ShowInfo(playerid)
         return 0;
     }
     pBizMenuSlot[playerid] = slot;
-    new profit[32], kunci[16], list[256], title[64];
+    new profit[32], kunci[16], title[64], opts[3][64];
     FormatRupiah(bProfit[slot], profit, sizeof(profit));
     if (bLocked[slot]) format(kunci, sizeof(kunci), "Buka Bisnis");
     else format(kunci, sizeof(kunci), "Kunci Bisnis");
-    format(list, sizeof(list), "Ambil Keuntungan (%s)\n%s\nJual Bisnis", profit, kunci);
-    format(title, sizeof(title), "Bisnis: %s", bName[slot]);
-    Dialog_Show(playerid, BizInfo, DIALOG_STYLE_LIST, title, list, "Pilih", "Tutup");
+    format(opts[0], 64, "Ambil Keuntungan (%s)", profit);
+    format(opts[1], 64, "%s", kunci);
+    format(opts[2], 64, "Jual Bisnis");
+    format(title, sizeof(title), "BISNIS: %s", bName[slot]);
+    UI_ShowMenu(playerid, "dialog_BizInfo", title, "Pilih salah satu opsi:", opts, 3);
     return 1;
 }
 
@@ -327,15 +329,16 @@ stock Business_BuyConfirm(playerid, slot)
     return 1;
 }
 
-// Business_InfoPublic: info singkat bisnis milik orang lain (dari tombol ENTER).
+// Business_InfoPublic: info singkat bisnis milik orang lain (textdraw modern).
 stock Business_InfoPublic(playerid, slot)
 {
     if (slot < 0 || slot >= MAX_BUSINESS || !bExists[slot]) return 0;
     new info[256];
     format(info, sizeof(info),
-        "Nama: %s\nTipe: %s\nPemilik: %s",
+        "Nama: %s~n~Tipe: %s~n~Pemilik: %s",
         bName[slot], Business_TypeName[bType[slot]], bOwnerName[slot]);
-    Dialog_Show(playerid, BizPublicInfo, DIALOG_STYLE_MSGBOX, "Info Bisnis", info, "Tutup", "");
+    new opts[1][64] = {"Tutup"};
+    UI_ShowMenu(playerid, "dialog_BizPublicInfo", "INFO BISNIS", info, opts, 1);
     return 1;
 }
 

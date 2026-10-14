@@ -416,7 +416,7 @@ stock Workshop_Sell(playerid, slot)
     return 1;
 }
 
-// Workshop_ShowInfo: /wsinfo - dialog kelola bengkel milik pemain.
+// Workshop_ShowInfo: /wsinfo - menu modern kelola bengkel milik pemain.
 stock Workshop_ShowInfo(playerid)
 {
     new slot = Workshop_OwnedNear(playerid);
@@ -426,11 +426,12 @@ stock Workshop_ShowInfo(playerid)
         return 0;
     }
     pWsMenuSlot[playerid] = slot;
-    new profit[32], list[256], title[64];
+    new profit[32], opts[2][64], title[64];
     FormatRupiah(wProfit[slot], profit, sizeof(profit));
-    format(list, sizeof(list), "Ambil Keuntungan (%s)\nJual Bengkel", profit);
-    format(title, sizeof(title), "Bengkel: %s", wName[slot]);
-    Dialog_Show(playerid, WsInfo, DIALOG_STYLE_LIST, title, list, "Pilih", "Tutup");
+    format(opts[0], 64, "Ambil Keuntungan (%s)", profit);
+    format(opts[1], 64, "Jual Bengkel");
+    format(title, 64, "BENGKEL: %s", wName[slot]);
+    UI_ShowMenu(playerid, "dialog_WsInfo", title, "Pilih salah satu opsi:", opts, 2);
     return 1;
 }
 
@@ -532,12 +533,14 @@ Dialog:WsInfo(playerid, response, listitem, inputtext[])
     }
     else if (listitem == 1)
     {
-        new harga[32], msg[256];
+        new harga[32], msg[256], opts[2][64];
         FormatRupiah((wPrice[slot] * WORKSHOP_SELL_RATE) / 100, harga, sizeof(harga));
         format(msg, sizeof(msg),
-            "Yakin ingin menjual bengkel \"%s\"?\n\nKamu akan menerima %s (%d%% dari harga beli).",
+            "Yakin ingin menjual bengkel \"%s\"?~n~~n~Kamu akan menerima %s (%d%% dari harga beli).",
             wName[slot], harga, WORKSHOP_SELL_RATE);
-        Dialog_Show(playerid, WsSellConfirm, DIALOG_STYLE_MSGBOX, "Jual Bengkel", msg, "Jual", "Batal");
+        format(opts[0], 64, "Jual");
+        format(opts[1], 64, "Batal");
+        UI_ShowMenu(playerid, "dialog_WsSellConfirm", "JUAL BENGKEL", msg, opts, 2);
     }
     return 1;
 }
@@ -545,7 +548,7 @@ Dialog:WsInfo(playerid, response, listitem, inputtext[])
 // Dialog:WsSellConfirm - konfirmasi sebelum bengkel dijual kembali.
 Dialog:WsSellConfirm(playerid, response, listitem, inputtext[])
 {
-    if (!response) return 1;
+    if (!response || listitem != 0) return 1; // "Batal" (opsi 1) atau ESC
     new slot = pWsMenuSlot[playerid];
     if (slot < 0 || slot >= MAX_WORKSHOP || !wExists[slot]) return 1;
     if (wOwnerCharID[slot] != Society_PlayerData[playerid][sPCharID])

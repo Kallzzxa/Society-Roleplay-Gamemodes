@@ -476,16 +476,16 @@ stock Zone_CmdList(playerid)
         SendClientMessage(playerid, 0xCC3333FF, "Anda belum memilih karakter.");
         return 1;
     }
-    new list[1024], tname[16], count = 0;
-    list[0] = EOS;
+    // Menu modern: satu opsi per zona, format "ID <id> | <tipe> | <nama>".
+    new tname[16], count = 0;
+    new opts[MAX_ZONE][64];
     for (new i = 0; i < MAX_ZONE; i++)
     {
         if (!zoneExists[i]) continue;
         Zone_TypeName(zoneType[i], tname, sizeof(tname));
-        new line[96];
-        format(line, sizeof(line), "ID %d | %s | %s\n", zoneDBID[i], tname, zoneName[i]);
-        strcat(list, line, sizeof(list));
-        pZoneListSlot[playerid][count] = i; // baris dialog -> slot zona
+        format(opts[count], sizeof(opts[]), "ID %d | %s | %s",
+            zoneDBID[i], tname, zoneName[i]);
+        pZoneListSlot[playerid][count] = i; // baris menu -> slot zona
         count++;
     }
     pZoneListCount[playerid] = count;
@@ -494,8 +494,8 @@ stock Zone_CmdList(playerid)
         SendClientMessage(playerid, 0xCCCCCCFF, "Belum ada zona di server ini.");
         return 1;
     }
-    Dialog_Show(playerid, ZoneListHandler, DIALOG_STYLE_LIST,
-        "Zona di Server", list, "Detail", "Tutup");
+    UI_ShowMenu(playerid, "dialog_ZoneListHandler", "ZONA DI SERVER",
+        "Pilih zona untuk melihat detail:", opts, count);
     return 1;
 }
 
@@ -535,7 +535,7 @@ Dialog:ZoneListHandler(playerid, response, listitem, inputtext[])
     new tname[16], info[512];
     Zone_TypeName(zoneType[slot], tname, sizeof(tname));
     format(info, sizeof(info),
-        "Nama: %s\nTipe: %s\n\nBatas area:\n  Min X: %.1f | Min Y: %.1f\n  Max X: %.1f | Max Y: %.1f\n  (persegi %.0fx%.0f meter)\n\n%s",
+        "Nama: %s~n~Tipe: %s~n~~n~Batas area:~n~  Min X: %.1f | Min Y: %.1f~n~  Max X: %.1f | Max Y: %.1f~n~  (persegi %.0fx%.0f meter)~n~~n~%s",
         zoneName[slot], tname,
         zoneMinX[slot], zoneMinY[slot], zoneMaxX[slot], zoneMaxY[slot],
         (zoneMaxX[slot] - zoneMinX[slot]), (zoneMaxY[slot] - zoneMinY[slot]),
@@ -544,13 +544,16 @@ Dialog:ZoneListHandler(playerid, response, listitem, inputtext[])
             "Area berbahaya: damage tetap berjalan, waspadalah.");
     if (IsAdmin(playerid, 4))
     {
-        Dialog_Show(playerid, ZoneInfoHandler, DIALOG_STYLE_MSGBOX,
-            "Detail Zona", info, "Hapus Zona", "Tutup");
+        // Sengaja hanya 1 opsi: framework meneruskan response=1 untuk
+        // opsi apa pun yang diklik, jadi tombol "Tutup" sebagai opsi kedua
+        // akan ikut menghapus zona. Batalkan dengan ESC.
+        new opts[1][64] = {"Hapus Zona"};
+        UI_ShowMenu(playerid, "dialog_ZoneInfoHandler", "DETAIL ZONA", info, opts, 1);
     }
     else
     {
-        Dialog_Show(playerid, ZoneInfoHandler, DIALOG_STYLE_MSGBOX,
-            "Detail Zona", info, "Tutup", "");
+        new opts[1][64] = {"Tutup"};
+        UI_ShowMenu(playerid, "dialog_ZoneInfoHandler", "DETAIL ZONA", info, opts, 1);
     }
     return 1;
 }
