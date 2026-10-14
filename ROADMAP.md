@@ -173,10 +173,21 @@ compile 0 error, commit+push per item.
       faction], owner_id, name, ext pos, int pos+interior, locked).
       Admin/pemilik `/createdoor` → pintu masuk/keluar interior apa pun
       (rumah, bisnis, markas). `/lockdoor`, pickup + label 3D.
-- [ ] **Inventory System (textdraw)**: tabel `inventory`
-      (char_id, item, amount). `/inv` → UI PlayerTextDraw grid slot
-      klik (pakai SelectTextDraw): pakai/drop/beri item (makanan, minuman,
-      obat, senjata, narkoba, ikan, ore). Kapasitas terbatas per slot.
+- [x] **Inventory System (textdraw)** (selesai 2026-10-14): tabel
+      `inventory` (char_id, item_id, amount). `/inv` → panel PlayerTextDraw
+      5 slot klik (SelectTextDraw): Roti, Air Mineral, Coconut Water,
+      Kopi, Obat. Klik slot → dialog Gunakan / Buang 1 / Beri ke Pemain
+      / Kembali. Efek terhubung ke Needs: roti +35 makan, air +35 minum,
+      coconut +50 minum & -15 stress, kopi -30 stress, obat +40 darah.
+      Data dimuat saat karakter dipilih, tersimpan otomatis.
+      Modul: `Server_Libraries/Inventory/Inventory_System.pwn`.
+- [x] **Starterpack Warga Baru** (selesai 2026-10-14, permintaan user;
+      referensi riset YouTube 3 server): `/starterpack` → dialog isi paket
+      → sekali klaim per karakter (tabel `starterpack_claims`). Isi:
+      Rp5.000.000 tunai, Roti x5, Air Mineral x5, Coconut Water x3,
+      Kopi x2, Obat x2 (masuk inventory), motor Sanchez gratis
+      (kendaraan pribadi via `Vehicle_GiveFree`).
+      Modul: `Server_Libraries/Starterpack/Starterpack_System.pwn`.
 
 ## Berikutnya — FITUR SERU DARI REVIEW SERVER (permintaan user 2026-10-13)
 

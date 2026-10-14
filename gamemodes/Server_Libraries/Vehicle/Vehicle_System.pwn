@@ -436,6 +436,61 @@ stock Vehicle_Buy(playerid, catidx)
     return 1;
 }
 
+// Vehicle_GiveFree: memberikan kendaraan gratis (mis. starterpack) ke pemain.
+stock Vehicle_GiveFree(playerid, model)
+{
+    new charid = Society_PlayerData[playerid][sPCharID];
+    if (charid <= 0) return 0;
+    if (Vehicle_CountOwned(charid) >= MAX_VEH_PER_CHAR)
+    {
+        SendClientMessage(playerid, COLOR_YELLOW, "Slot kendaraanmu penuh, kendaraan gratis tidak dapat diberikan.");
+        return 0;
+    }
+    new slot = Vehicle_FreeSlot();
+    if (slot == -1)
+    {
+        SendClientMessage(playerid, COLOR_RED, "Slot kendaraan server penuh.");
+        return 0;
+    }
+    new Float:px, Float:py, Float:pz, Float:pa;
+    GetPlayerPos(playerid, px, py, pz);
+    GetPlayerFacingAngle(playerid, pa);
+    px += 3.0 * floatsin(-pa, degrees);
+    py += 3.0 * floatcos(-pa, degrees);
+
+    vExists[slot] = 1;
+    vDBID[slot] = 0; // diisi dari cache_insert_id di OnVehicleCreated
+    vOwnerCharID[slot] = charid;
+    format(vOwnerName[slot], sizeof(vOwnerName[]), "%s", pCharName[playerid]);
+    vModel[slot] = model;
+    vColor1[slot] = random(126);
+    vColor2[slot] = random(126);
+    Vehicle_MakePlate(vPlate[slot], sizeof(vPlate[]));
+    vLocked[slot] = 0;
+    vFuel[slot] = 100.0;
+    vPosX[slot] = px;
+    vPosY[slot] = py;
+    vPosZ[slot] = pz;
+    vAngle[slot] = pa;
+    vVehID[slot] = INVALID_VEHICLE_ID;
+    vSpawned[slot] = false;
+    vGarageID[slot] = 0;
+    Vehicle_Spawn(slot);
+
+    new query[320];
+    mysql_format(g_SQL, query, sizeof(query),
+        "INSERT INTO player_vehicles (char_id, model, pos_x, pos_y, pos_z, angle, color1, color2, plate, locked, fuel) VALUES (%d, %d, %f, %f, %f, %f, %d, %d, '%e', 0, 100.0)",
+        charid, model, px, py, pz, pa, vColor1[slot], vColor2[slot], vPlate[slot]);
+    mysql_tquery(g_SQL, query, "OnVehicleCreated", "dd", playerid, slot);
+
+    new nama[32], msg[160];
+    Vehicle_CatName(model, nama, sizeof(nama));
+    format(msg, sizeof(msg), "Kamu mendapatkan %s (%s) gratis!", nama, vPlate[slot]);
+    SendClientMessage(playerid, COLOR_GREEN, msg);
+    PutPlayerInVehicle(playerid, vVehID[slot], 0);
+    return 1;
+}
+
 // Vehicle_ToggleLock: mengunci/membuka kendaraan milik pemain.
 stock Vehicle_ToggleLock(playerid, slot)
 {

@@ -230,3 +230,18 @@ CREATE TABLE IF NOT EXISTS `dealers` (
 
 -- Untuk database yang sudah ada (dibuat sebelum update dealer dinamis), jalankan:
 -- (cukup import ulang blok CREATE TABLE `dealers` di atas)
+
+-- Skema inventory & starterpack (update 2026-10-14).
+-- inventory: isi tas tiap karakter (item_id 0=Roti, 1=Air Mineral, 2=Coconut Water, 3=Kopi, 4=Obat).
+-- starterpack_claims: catatan klaim paket warga baru (sekali per karakter).
+CREATE TABLE IF NOT EXISTS `inventory` (
+    `char_id` INT NOT NULL,
+    `item_id` TINYINT NOT NULL,
+    `amount` INT DEFAULT 0,
+    PRIMARY KEY (`char_id`, `item_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `starterpack_claims` (
+    `char_id` INT PRIMARY KEY,
+    `claimed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
